@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GymBuddy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base: #121212;
+    --bg-surface: #1E1E1E;
+    --bg-surface-raised: #262626;
+    --accent-primary: #39FF14;
+    --accent-primary-dim: #2BC010;
+    --accent-warn: #FFBF00;
+    --text-primary: #FFFFFF;
+    --text-secondary: #9CA3AF;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --tap-target-min: 56px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: radial-gradient(circle at 30% 20%, #1a1a1a 0%, #0d0d0d 55%, #050505 100%);
+    color: var(--text-primary);
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; justify-content: center; align-items: center;
+    padding: 12px; -webkit-font-smoothing: antialiased;
+  }
+  .phone-frame {
+    width: 100%; max-width: 420px; height: 100%; max-height: 800px; min-height: 560px;
+    background: var(--bg-base); border-radius: 32px; border: 1px solid #2A2A2A;
+    overflow: hidden; position: relative; display: flex; flex-direction: column;
+  }
+  .screen { display: none; flex-direction: column; padding: 20px 20px 16px; position: relative; overflow-y: auto; height: 100%; }
+  .screen.active { display: flex; animation: screenIn 0.32s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes screenIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+
+  h1 { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 800; line-height: 1.2; letter-spacing: -0.02em; }
+  h2 { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .text-secondary { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+  .eyebrow { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; color: var(--accent-primary); text-transform: uppercase; margin-bottom: 10px; }
+
+  .btn-primary {
+    min-height: var(--tap-target-min); background: var(--accent-primary); color: #0A1A05; border: none;
+    border-radius: var(--radius-md); font-family: 'Sora', sans-serif; font-weight: 700; font-size: 16px;
+    letter-spacing: -0.01em; cursor: pointer; width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 0 24px rgba(57,255,20,0.25); transition: transform 0.12s ease;
+  }
+  .btn-primary:active { background: var(--accent-primary-dim); transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.4; box-shadow: none; }
+
+  .option-chip {
+    min-height: var(--tap-target-min); background: var(--bg-surface); border: 2px solid #2E2E2E;
+    border-radius: var(--radius-md); color: var(--text-primary); font-size: 16px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; padding: 0 18px;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+  }
+  .option-chip:active { transform: scale(0.97); }
+  .option-chip.selected {
+    border-color: var(--accent-primary); background: rgba(57,255,20,0.08); color: var(--accent-primary);
+    animation: chipPop 0.28s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes chipPop { 0% { transform: scale(1); } 40% { transform: scale(1.03); } 100% { transform: scale(1); } }
+  .option-stack { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+
+  .avatar-dock { display: flex; align-items: flex-end; gap: 10px; }
+  .avatar-bubble {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(145deg, var(--accent-primary), #1FA80A);
+    display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(57,255,20,0.4);
+  }
+  .avatar-speech {
+    background: var(--bg-surface-raised); border: 1px solid #333; border-radius: var(--radius-md);
+    border-bottom-left-radius: 4px; padding: 12px 14px; font-size: 14px; font-weight: 600; max-width: 260px;
+  }
+
+  .progress-dots { display: flex; gap: 6px; margin-bottom: 18px; }
+  .progress-dots span { height: 4px; flex: 1; border-radius: 2px; background: #2A2A2A; }
+  .progress-dots span.done { background: var(--accent-primary); }
+
+  .progress-card { background: var(--bg-surface); border-radius: var(--radius-lg); padding: 20px; margin-top: 12px; }
+  .progress-card-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .progress-card-title { font-size: 15px; font-weight: 700; }
+  .progress-card-value { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; color: var(--accent-primary); }
+  .progress-track { height: 10px; background: #2A2A2A; border-radius: 5px; overflow: hidden; margin-top: 12px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-primary-dim), var(--accent-primary)); border-radius: 5px; }
+  .progress-card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+
+  .day-card { border-left: 4px solid var(--accent-primary); background: var(--bg-surface); border-radius: 12px; padding: 14px; margin-top: 12px; }
+  .day-title { font-family: 'Sora', sans-serif; font-weight: 700; color: var(--accent-primary); font-size: 14px; }
+  .day-focus { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+  .exercise-row { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid #2A2A2A; }
+  .exercise-row:first-of-type { border-top: none; }
+  .check-tap {
+    width: 24px; height: 24px; border-radius: 7px; border: 2px solid var(--accent-primary);
+    flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; margin-top: 1px; color: var(--accent-primary); font-weight: 700;
+  }
+  .check-tap.checked { background: var(--accent-primary); color: #0A1A05; }
+  .exercise-name { font-weight: 600; font-size: 14px; }
+  .exercise-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .video-link { color: var(--accent-primary); text-decoration: none; }
+  .safety-note { font-size: 11px; color: var(--accent-warn); background: rgba(255,191,0,0.1); padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; }
+  .diet-tip { font-size: 12px; background: var(--bg-surface-raised); padding: 8px 10px; border-radius: 8px; margin-top: 10px; }
+
+  .loading-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
+  .spinner { width: 36px; height: 36px; border: 3px solid #2A2A2A; border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-box { background: rgba(255,80,80,0.1); border: 1px solid #663333; color: #FF8080; padding: 12px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
+
+  .btn-ghost { min-height: 44px; background: none; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; width: 100%; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="phone-frame" id="phoneFrame"></div>
+
+<script>
+const STORAGE_KEYS = { name: 'gymbuddy_name', streak: 'gymbuddy_streak', lastActiveDay: 'gymbuddy_last_active_day', checkins: 'gymbuddy_checkins', plan: 'gymbuddy_plan', onboarding: 'gymbuddy_onboarding' };
+
+const STATE = {
+  screen: 'profile',
+  name: localStorage.getItem(STORAGE_KEYS.name) || '',
+  onboarding: JSON.parse(localStorage.getItem(STORAGE_KEYS.onboarding) || '{"experience_level":null,"days_available":null,"goal":null,"injuries":""}'),
+  plan: JSON.parse(localStorage.getItem(STORAGE_KEYS.plan) || 'null'),
+  checkins: JSON.parse(localStorage.getItem(STORAGE_KEYS.checkins) || '{}'),
+  streak: parseInt(localStorage.getItem(STORAGE_KEYS.streak) || '0', 10),
+  loading: false,
+  error: null,
+};
+
+// If a plan already exists from a previous visit, skip straight to home
+if (STATE.plan && STATE.name) STATE.screen = 'home';
+
+function render() {
+  const frame = document.getElementById('phoneFrame');
+  if (STATE.screen === 'profile') frame.innerHTML = renderProfile();
+  else if (STATE.screen === 'experience') frame.innerHTML = renderExperience();
+  else if (STATE.screen === 'days') frame.innerHTML = renderDays();
+  else if (STATE.screen === 'goal') frame.innerHTML = renderGoal();
+  else if (STATE.screen === 'loading') frame.innerHTML = renderLoading();
+  else if (STATE.screen === 'home') frame.innerHTML = renderHome();
+  attachListeners();
+}
+
+function renderProfile() {
+  return `
+    <div class="screen active" style="justify-content:center;">
+      <div class="eyebrow">Welcome</div>
+      <h1>What should we call you?</h1>
+      <p class="text-secondary" style="margin-top:8px;">No password needed — just personalizes your plan on this device.</p>
+      <input id="nameInput" type="text" placeholder="Your name" value="${STATE.name}"
+        style="margin-top:24px; min-height:56px; background:var(--bg-surface); border:2px solid #2E2E2E; border-radius:14px; padding:0 16px; color:white; font-size:16px; width:100%; font-family:'Inter',sans-serif;" />
+      <button class="btn-primary" style="margin-top:20px;" id="profileContinueBtn">Continue</button>
+    </div>`;
+}
+
+function renderExperience() {
+  const exp = STATE.onboarding.experience_level;
+  return `
+    <div class="screen active">
+      <div class="progress-dots"><span class="done"></span><span></span><span></span></div>
+      <div class="eyebrow">GymBuddy</div>
+      <h1>Hi ${STATE.name} 👋</h1>
+      <div class="avatar-dock" style="margin-top:18px;">
+        <div class="avatar-bubble">🧑‍🏫</div>
+        <div class="avatar-speech">Are you a beginner, or do you already train regularly?</div>
+      </div>
+      <div class="option-stack" data-field="experience_level">
+        <button class="option-chip ${exp==='beginner'?'selected':''}" data-value="beginner">🌱 Beginner</button>
+        <button class="option-chip ${exp==='some_experience'?'selected':''}" data-value="some_experience">💪 Some experience</button>
+        <button class="option-chip ${exp==='experienced'?'selected':''}" data-value="experienced">🔥 Experienced</button>
+      </div>
+      <button class="btn-primary" id="continueBtn" ${!exp?'disabled':''}>Continue</button>
+    </div>`;
+}
+
+function renderDays() {
+  const days = STATE.onboarding.days_available;
+  return `
+    <div class="screen active">
+      <div class="progress-dots"><span class="done"></span><span class="done"></span><span></span></div>
+      <h2>How many days a week can you train?</h2>
+      <div class="option-stack" data-field="days_available" style="margin-top:16px;">
+        <button class="option-chip ${days==='2'?'selected':''}" data-value="2">2 days</button>
+        <button class="option-chip ${days==='3'?'selected':''}" data-value="3">3 days</button>
+        <button class="option-chip ${days==='4'?'selected':''}" data-value="4">4 days</button>
+        <button class="option-chip ${days==='5'?'selected':''}" data-value="5">5+ days</button>
+      </div>
+      <button class="btn-primary" id="continueBtn" ${!days?'disabled':''}>Continue</button>
+    </div>`;
+}
+
+function renderGoal() {
+  const goal = STATE.onboarding.goal;
+  return `
+    <div class="screen active">
+      <div class="progress-dots"><span class="done"></span><span class="done"></span><span class="done"></span></div>
+      <h2>What's your main goal?</h2>
+      <div class="option-stack" data-field="goal" style="margin-top:16px;">
+        <button class="option-chip ${goal==='general_fitness'?'selected':''}" data-value="general_fitness">⚡ General fitness</button>
+        <button class="option-chip ${goal==='lose_weight'?'selected':''}" data-value="lose_weight">🔥 Lose weight</button>
+        <button class="option-chip ${goal==='build_muscle'?'selected':''}" data-value="build_muscle">💪 Build muscle</button>
+        <button class="option-chip ${goal==='get_stronger'?'selected':''}" data-value="get_stronger">🏋️ Get stronger</button>
+      </div>
+      <button class="btn-primary" id="generatePlanBtn" ${!goal?'disabled':''}>Generate My Week</button>
+      ${STATE.error ? `<div class="error-box">${STATE.error}</div>` : ''}
+    </div>`;
+}
+
+function renderLoading() {
+  return `
+    <div class="screen active loading-wrap">
+      <div class="spinner"></div>
+      <div style="font-family:'Sora',sans-serif; font-weight:700;">Building your week...</div>
+      <div class="text-secondary" style="font-size:13px;">Personalizing based on your answers</div>
+    </div>`;
+}
+
+function renderHome() {
+  if (!STATE.plan) return renderGoal();
+  const totalExercises = STATE.plan.week.reduce((s, d) => s + d.exercises.length, 0);
+  const doneCount = Object.values(STATE.checkins).filter(Boolean).length;
+  const pct = totalExercises ? Math.round((doneCount / totalExercises) * 100) : 0;
+
+  const days = STATE.plan.week.map((day, dIdx) => `
+    <div class="day-card">
+      <div class="day-title">${day.day}</div>
+      <div class="day-focus">${day.focus}</div>
+      ${day.exercises.map((ex, eIdx) => {
+        const key = `${dIdx}-${eIdx}`;
+        const checked = !!STATE.checkins[key];
+        const ytUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(ex.video_search_term || ex.name);
+        return `
+        <div class="exercise-row">
+          <div class="check-tap ${checked?'checked':''}" data-key="${key}">${checked?'✓':''}</div>
+          <div style="flex:1;">
+            <div class="exercise-name">${ex.name}</div>
+            <div class="exercise-meta">${ex.sets} sets × ${ex.reps} · <a class="video-link" href="${ytUrl}" target="_blank" rel="noopener">▶ demo</a></div>
+            ${ex.safety_note ? `<div class="safety-note">⚠ ${ex.safety_note}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+      <div class="diet-tip">🥗 ${day.diet_tip}</div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="screen active">
+      <div class="eyebrow">Today</div>
+      <h1 style="font-size:22px;">Nice to have you, ${STATE.name}.</h1>
+      <div class="progress-card">
+        <div class="progress-card-top">
+          <div class="progress-card-title">This Week's Progress</div>
+          <div class="progress-card-value">${doneCount}/${totalExercises}</div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+        <div class="progress-card-sub">🔥 ${STATE.streak}-day streak · Keep it going</div>
+      </div>
+      ${days}
+      <button class="btn-ghost" id="restartBtn">Start over with new answers</button>
+    </div>`;
+}
+
+function attachListeners() {
+  const profileBtn = document.getElementById('profileContinueBtn');
+  if (profileBtn) profileBtn.addEventListener('click', () => {
+    const val = document.getElementById('nameInput').value.trim();
+    STATE.name = val || 'there';
+    localStorage.setItem(STORAGE_KEYS.name, STATE.name);
+    STATE.screen = 'experience';
+    render();
+  });
+
+  document.querySelectorAll('.option-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const stack = chip.closest('.option-stack');
+      const field = stack.dataset.field;
+      stack.querySelectorAll('.option-chip').forEach((c) => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      STATE.onboarding[field] = chip.dataset.value;
+      localStorage.setItem(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+      render();
+    });
+  });
+
+  const continueBtn = document.getElementById('continueBtn');
+  if (continueBtn) continueBtn.addEventListener('click', () => {
+    if (STATE.screen === 'experience') STATE.screen = 'days';
+    else if (STATE.screen === 'days') STATE.screen = 'goal';
+    render();
+  });
+
+  const generateBtn = document.getElementById('generatePlanBtn');
+  if (generateBtn) generateBtn.addEventListener('click', generatePlan);
+
+  document.querySelectorAll('.check-tap').forEach((el) => {
+    el.addEventListener('click', async () => {
+      const key = el.dataset.key;
+      const wasChecked = !!STATE.checkins[key];
+      STATE.checkins[key] = !wasChecked;
+      localStorage.setItem(STORAGE_KEYS.checkins, JSON.stringify(STATE.checkins));
+      if (!wasChecked) bumpStreakIfNeeded();
+      render();
+    });
+  });
+
+  const restartBtn = document.getElementById('restartBtn');
+  if (restartBtn) restartBtn.addEventListener('click', () => {
+    if (!confirm('This clears your current plan and progress. Continue?')) return;
+    localStorage.removeItem(STORAGE_KEYS.plan);
+    localStorage.removeItem(STORAGE_KEYS.checkins);
+    localStorage.removeItem(STORAGE_KEYS.onboarding);
+    STATE.plan = null;
+    STATE.checkins = {};
+    STATE.onboarding = { experience_level: null, days_available: null, goal: null, injuries: '' };
+    STATE.screen = 'experience';
+    render();
+  });
+}
+
+async function generatePlan() {
+  STATE.screen = 'loading';
+  STATE.error = null;
+  render();
+
+  try {
+    const response = await fetch('/api/generate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(STATE.onboarding),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to generate plan');
+    STATE.plan = data;
+    localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(data));
+    STATE.screen = 'home';
+    render();
+  } catch (err) {
+    STATE.error = "Couldn't generate your plan: " + err.message + '. Please try again.';
+    STATE.screen = 'goal';
+    render();
+  }
+}
+
+function bumpStreakIfNeeded() {
+  const today = new Date().toDateString();
+  const lastActive = localStorage.getItem(STORAGE_KEYS.lastActiveDay);
+  if (lastActive !== today) {
+    STATE.streak += 1;
+    localStorage.setItem(STORAGE_KEYS.lastActiveDay, today);
+    localStorage.setItem(STORAGE_KEYS.streak, String(STATE.streak));
+  }
+}
+
+render();
+</script>
+</body>
+</html>
