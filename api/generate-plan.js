@@ -31,11 +31,14 @@ User profile:
 Rules:
 - Create exactly ${days_available} workout days, with sensible rest/recovery between muscle groups
 - Beginner-friendly exercises only if experience_level is beginner; scale difficulty appropriately otherwise
-- If injuries are listed, exclude contraindicated movements and add a one-line safety_note for any affected exercise (empty string if not applicable)
-- Each exercise needs: name, sets, reps, and video_search_term (a short phrase usable to search YouTube for a demo)
+- Each day has three phases: warmup, exercises (main strength work), and cooldown
+- "warmup": 2-3 items, each with name, duration (e.g. "3 min"), and instructions (how to do it)
+- "exercises": the main strength work. Each item needs: name, sets, reps, instructions (a 2-3 sentence how-to that includes any relevant safety guidance — e.g. if injuries are listed, note how to modify or avoid aggravating them), alternative (a substitute exercise name for someone who can't access equipment or has a limitation), and video_search_term (a short phrase usable to search YouTube for a demo)
+- "cooldown": 1-2 items, each with name, duration, and instructions
+- If injuries are listed, exclude contraindicated movements entirely and fold any relevant safety guidance into the "instructions" field of affected items — do not use a separate safety field
 - Include one short, practical diet_tip per day (not a full meal plan)
-- Output STRICT JSON ONLY. No markdown, no prose, no code fences, no explanations before or after. Keep exercise names and video_search_terms short (under 6 words). Match this exact schema:
-{"week":[{"day":"Monday","focus":"","exercises":[{"name":"","sets":0,"reps":"","video_search_term":"","safety_note":""}],"diet_tip":""}]}`;
+- Output STRICT JSON ONLY. No markdown, no prose, no code fences, no explanations before or after. Keep names and video_search_terms short (under 6 words). Match this exact schema:
+{"week":[{"day":"","focus":"","warmup":[{"name":"","duration":"","instructions":""}],"exercises":[{"name":"","sets":0,"reps":"","instructions":"","alternative":"","video_search_term":""}],"cooldown":[{"name":"","duration":"","instructions":""}],"diet_tip":""}]}`;
 
   try {
     const response = await fetch(

@@ -3,6 +3,9 @@
   "functions": {
     "api/generate-plan.js": {
       "maxDuration": 30
+    },
+    "api/get-video.js": {
+      "maxDuration": 10
     }
   }
 }

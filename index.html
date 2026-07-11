@@ -97,8 +97,19 @@
   .day-card { border-left: 4px solid var(--accent-primary); background: var(--bg-surface); border-radius: 12px; padding: 14px; margin-top: 12px; }
   .day-title { font-family: 'Sora', sans-serif; font-weight: 700; color: var(--accent-primary); font-size: 14px; }
   .day-focus { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
-  .exercise-row { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid #2A2A2A; }
-  .exercise-row:first-of-type { border-top: none; }
+
+  .phase-section { margin-top: 14px; }
+  .phase-section:first-of-type { margin-top: 0; }
+  .phase-label { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
+  .phase-item { padding: 8px 0; border-top: 1px solid #2A2A2A; }
+  .phase-item:first-of-type { border-top: none; }
+  .phase-item-name { font-weight: 600; font-size: 13px; }
+  .phase-item-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .phase-item-instructions { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+
+  .exercise-card { border-top: 1px solid #2A2A2A; }
+  .exercise-card:first-of-type { border-top: none; }
+  .exercise-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; cursor: pointer; }
   .check-tap {
     width: 24px; height: 24px; border-radius: 7px; border: 2px solid var(--accent-primary);
     flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -107,8 +118,16 @@
   .check-tap.checked { background: var(--accent-primary); color: #0A1A05; }
   .exercise-name { font-weight: 600; font-size: 14px; }
   .exercise-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-  .video-link { color: var(--accent-primary); text-decoration: none; }
-  .safety-note { font-size: 11px; color: var(--accent-warn); background: rgba(255,191,0,0.1); padding: 3px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; }
+  .expand-caret { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+  .exercise-detail { padding: 0 0 12px 34px; }
+  .exercise-instructions { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .exercise-alt { font-size: 12px; color: var(--accent-warn); margin-top: 6px; }
+  .coach-badge { display: inline-block; font-size: 11px; color: var(--text-secondary); background: var(--bg-surface-raised); padding: 4px 8px; border-radius: 6px; margin-top: 8px; opacity: 0.6; cursor: default; }
+  .btn-video { min-height: 40px; margin-top: 10px; background: none; border: 1.5px solid var(--accent-primary); color: var(--accent-primary); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 14px; }
+  .btn-video:disabled { opacity: 0.5; cursor: default; }
+  .video-embed { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); margin-top: 10px; border: none; display: block; }
+  .video-error { font-size: 11px; color: #FF8080; margin-top: 6px; }
+
   .diet-tip { font-size: 12px; background: var(--bg-surface-raised); padding: 8px 10px; border-radius: 8px; margin-top: 10px; }
 
   .loading-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
@@ -134,7 +153,21 @@ const STATE = {
   streak: parseInt(localStorage.getItem(STORAGE_KEYS.streak) || '0', 10),
   loading: false,
   error: null,
+  expanded: {},
+  videoCache: {},
+  videoLoading: {},
+  videoError: {},
 };
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // If a plan already exists from a previous visit, skip straight to home
 if (STATE.plan && STATE.name) STATE.screen = 'home';
@@ -226,31 +259,94 @@ function renderLoading() {
 
 function renderHome() {
   if (!STATE.plan) return renderGoal();
-  const totalExercises = STATE.plan.week.reduce((s, d) => s + d.exercises.length, 0);
+  const totalExercises = STATE.plan.week.reduce((s, d) => s + (d.exercises ? d.exercises.length : 0), 0);
   const doneCount = Object.values(STATE.checkins).filter(Boolean).length;
   const pct = totalExercises ? Math.round((doneCount / totalExercises) * 100) : 0;
 
-  const days = STATE.plan.week.map((day, dIdx) => `
-    <div class="day-card">
-      <div class="day-title">${day.day}</div>
-      <div class="day-focus">${day.focus}</div>
-      ${day.exercises.map((ex, eIdx) => {
-        const key = `${dIdx}-${eIdx}`;
-        const checked = !!STATE.checkins[key];
-        const ytUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(ex.video_search_term || ex.name);
-        return `
-        <div class="exercise-row">
-          <div class="check-tap ${checked?'checked':''}" data-key="${key}">${checked?'✓':''}</div>
-          <div style="flex:1;">
-            <div class="exercise-name">${ex.name}</div>
-            <div class="exercise-meta">${ex.sets} sets × ${ex.reps} · <a class="video-link" href="${ytUrl}" target="_blank" rel="noopener">▶ demo</a></div>
-            ${ex.safety_note ? `<div class="safety-note">⚠ ${ex.safety_note}</div>` : ''}
+  const days = STATE.plan.week.map((day, dIdx) => {
+    const warmup = day.warmup || [];
+    const exercises = day.exercises || [];
+    const cooldown = day.cooldown || [];
+
+    const warmupHtml = warmup.map((w) => `
+      <div class="phase-item">
+        <div class="phase-item-name">${escapeHtml(w.name)}</div>
+        <div class="phase-item-meta">${escapeHtml(w.duration)}</div>
+        <div class="phase-item-instructions">${escapeHtml(w.instructions)}</div>
+      </div>`).join('');
+
+    const exercisesHtml = exercises.map((ex, eIdx) => {
+      const key = `${dIdx}-${eIdx}`;
+      const checked = !!STATE.checkins[key];
+      const expanded = !!STATE.expanded[key];
+      const cachedVideoId = STATE.videoCache[key];
+      const loadingVideo = !!STATE.videoLoading[key];
+      const videoError = STATE.videoError[key];
+
+      let detailHtml = '';
+      if (expanded) {
+        let videoAreaHtml;
+        if (cachedVideoId) {
+          videoAreaHtml = `<iframe class="video-embed" src="https://www.youtube.com/embed/${escapeHtml(cachedVideoId)}" title="${escapeHtml(ex.name)} demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+        } else if (loadingVideo) {
+          videoAreaHtml = `<button class="btn-video" disabled>Loading demo…</button>`;
+        } else {
+          videoAreaHtml = `<button class="btn-video" data-video-key="${key}" data-search-term="${escapeHtml(ex.video_search_term || ex.name)}">▼ Watch Demo</button>`
+            + (videoError ? `<div class="video-error">${escapeHtml(videoError)}</div>` : '');
+        }
+        detailHtml = `
+          <div class="exercise-detail">
+            <div class="exercise-instructions">${escapeHtml(ex.instructions)}</div>
+            ${ex.alternative ? `<div class="exercise-alt">Alternative: ${escapeHtml(ex.alternative)}</div>` : ''}
+            <div class="coach-badge">🎥 Live AI Coach — Coming in v2</div>
+            ${videoAreaHtml}
+          </div>`;
+      }
+
+      return `
+        <div class="exercise-card">
+          <div class="exercise-row" data-expand-key="${key}">
+            <div class="check-tap ${checked?'checked':''}" data-key="${key}">${checked?'✓':''}</div>
+            <div style="flex:1;">
+              <div class="exercise-name">${escapeHtml(ex.name)}</div>
+              <div class="exercise-meta">${ex.sets} sets × ${escapeHtml(ex.reps)}</div>
+            </div>
+            <div class="expand-caret">${expanded ? '▲' : '▼'}</div>
           </div>
+          ${detailHtml}
         </div>`;
-      }).join('')}
-      <div class="diet-tip">🥗 ${day.diet_tip}</div>
-    </div>
-  `).join('');
+    }).join('');
+
+    const cooldownHtml = cooldown.map((c) => `
+      <div class="phase-item">
+        <div class="phase-item-name">${escapeHtml(c.name)}</div>
+        <div class="phase-item-meta">${escapeHtml(c.duration)}</div>
+        <div class="phase-item-instructions">${escapeHtml(c.instructions)}</div>
+      </div>`).join('');
+
+    return `
+    <div class="day-card">
+      <div class="day-title">${escapeHtml(day.day)}</div>
+      <div class="day-focus">${escapeHtml(day.focus)}</div>
+
+      <div class="phase-section">
+        <div class="phase-label">🔥 Warm-up</div>
+        ${warmupHtml}
+      </div>
+
+      <div class="phase-section">
+        <div class="phase-label">💪 Main Workout</div>
+        ${exercisesHtml}
+      </div>
+
+      <div class="phase-section">
+        <div class="phase-label">🧊 Cool-down</div>
+        ${cooldownHtml}
+      </div>
+
+      <div class="diet-tip">🥗 ${escapeHtml(day.diet_tip)}</div>
+    </div>`;
+  }).join('');
 
   return `
     <div class="screen active">
@@ -302,13 +398,48 @@ function attachListeners() {
   if (generateBtn) generateBtn.addEventListener('click', generatePlan);
 
   document.querySelectorAll('.check-tap').forEach((el) => {
-    el.addEventListener('click', async () => {
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
       const key = el.dataset.key;
       const wasChecked = !!STATE.checkins[key];
       STATE.checkins[key] = !wasChecked;
       localStorage.setItem(STORAGE_KEYS.checkins, JSON.stringify(STATE.checkins));
       if (!wasChecked) bumpStreakIfNeeded();
       render();
+    });
+  });
+
+  document.querySelectorAll('.exercise-row[data-expand-key]').forEach((row) => {
+    row.addEventListener('click', () => {
+      const key = row.dataset.expandKey;
+      STATE.expanded[key] = !STATE.expanded[key];
+      render();
+    });
+  });
+
+  document.querySelectorAll('.btn-video[data-video-key]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const key = btn.dataset.videoKey;
+      const searchTerm = btn.dataset.searchTerm;
+      STATE.videoLoading[key] = true;
+      STATE.videoError[key] = null;
+      render();
+      try {
+        const response = await fetch('/api/get-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ searchTerm }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to load video');
+        STATE.videoCache[key] = data.videoId;
+      } catch (err) {
+        STATE.videoError[key] = err.message;
+      } finally {
+        STATE.videoLoading[key] = false;
+        render();
+      }
     });
   });
 
