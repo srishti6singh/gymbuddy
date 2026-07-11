@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "api/generate-plan.js": {
-      "maxDuration": 30
+      "maxDuration": 10
     },
     "api/get-video.js": {
       "maxDuration": 10
