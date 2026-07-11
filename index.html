@@ -91,38 +91,20 @@
   .progress-card-title { font-size: 15px; font-weight: 700; }
   .progress-card-value { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; color: var(--accent-primary); }
   .progress-track { height: 10px; background: #2A2A2A; border-radius: 5px; overflow: hidden; margin-top: 12px; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-primary-dim), var(--accent-primary)); border-radius: 5px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-primary-dim), var(--accent-primary)); border-radius: 5px; transition: width 0.3s ease; }
   .progress-card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
 
-  .day-card { border-left: 4px solid var(--accent-primary); background: var(--bg-surface); border-radius: 12px; padding: 14px; margin-top: 12px; }
-  .day-title { font-family: 'Sora', sans-serif; font-weight: 700; color: var(--accent-primary); font-size: 14px; }
-  .day-focus { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+  .day-card { border-left: 4px solid var(--accent-primary); background: var(--bg-surface); border-radius: 12px; padding: 16px; margin-top: 12px; }
+  .day-title { font-family: 'Sora', sans-serif; font-weight: 700; color: var(--accent-primary); font-size: 16px; }
+  .day-focus { font-size: 13px; color: var(--text-secondary); margin-top: 4px; margin-bottom: 10px; }
 
-  .phase-section { margin-top: 14px; }
-  .phase-section:first-of-type { margin-top: 0; }
   .phase-label { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
-  .phase-item { padding: 8px 0; border-top: 1px solid #2A2A2A; }
-  .phase-item:first-of-type { border-top: none; }
-  .phase-item-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .phase-item-name { font-weight: 600; font-size: 13px; }
-  .phase-item-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
-  .phase-item-instructions { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+
   .btn-timer-start { min-height: 32px; background: none; border: 1.5px solid var(--accent-primary); color: var(--accent-primary); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 12px; flex-shrink: 0; white-space: nowrap; }
   .timer-display { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 800; color: var(--accent-primary); flex-shrink: 0; min-width: 46px; text-align: right; }
   .timer-done { font-size: 13px; font-weight: 700; color: var(--accent-primary); flex-shrink: 0; }
 
-  .exercise-card { border-top: 1px solid #2A2A2A; }
-  .exercise-card:first-of-type { border-top: none; }
-  .exercise-row { display: flex; align-items: center; gap: 8px; padding: 9px 0; }
-  .check-tap {
-    width: 24px; height: 24px; border-radius: 7px; border: 2px solid var(--accent-primary);
-    flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 13px; margin-top: 1px; color: var(--accent-primary); font-weight: 700;
-  }
-  .check-tap.checked { background: var(--accent-primary); color: #0A1A05; }
   .exercise-tap-area { flex: 1; min-width: 0; cursor: pointer; }
-  .exercise-name { font-weight: 600; font-size: 14px; }
-  .exercise-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
   .play-icon-btn {
     width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--accent-primary);
     background: rgba(57,255,20,0.08); color: var(--accent-primary); font-size: 13px;
@@ -130,16 +112,31 @@
   }
   .play-icon-btn:disabled { opacity: 0.4; cursor: default; }
   .expand-caret { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; cursor: pointer; padding: 4px; }
-  .exercise-detail { padding: 0 0 12px 34px; }
-  .exercise-instructions { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
-  .exercise-alt { font-size: 12px; color: var(--accent-warn); margin-top: 6px; }
   .coach-badge { display: inline-block; font-size: 11px; color: var(--text-secondary); background: var(--bg-surface-raised); padding: 4px 8px; border-radius: 6px; margin-top: 8px; opacity: 0.6; cursor: default; }
-  .video-area { padding: 0 0 4px 34px; margin-top: 2px; }
+  .video-area { padding: 0 0 4px 32px; margin-top: 2px; }
   .video-embed { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); margin-top: 6px; border: none; display: block; }
   .video-loading { font-size: 12px; color: var(--text-secondary); padding: 4px 0; }
   .video-error { font-size: 11px; color: #FF8080; margin-top: 6px; }
 
-  .diet-tip { font-size: 12px; background: var(--bg-surface-raised); padding: 8px 10px; border-radius: 8px; margin-top: 10px; }
+  .session-progress-label { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+  .session-item { background: var(--bg-surface); border-radius: 12px; padding: 12px 14px; margin-top: 10px; transition: opacity 0.2s ease; }
+  .session-item-completed { opacity: 0.45; }
+  .session-item-locked { opacity: 0.35; }
+  .session-item-current { border: 1.5px solid var(--accent-primary); box-shadow: 0 0 16px rgba(57,255,20,0.15); }
+  .session-item-row { display: flex; align-items: center; gap: 10px; }
+  .session-item-badge { font-size: 15px; flex-shrink: 0; width: 20px; text-align: center; }
+  .session-item-name { font-weight: 600; font-size: 14px; }
+  .session-item-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .session-status-icon { font-size: 15px; flex-shrink: 0; color: var(--accent-primary); }
+  .session-status-icon.locked { color: var(--text-secondary); }
+  .session-item-instructions { font-size: 12px; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; padding-left: 30px; }
+  .session-item-alt { font-size: 12px; color: var(--accent-warn); margin-top: 6px; padding-left: 30px; }
+  .session-item-controls { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-left: 30px; }
+  .btn-skip { min-height: 36px; background: none; border: 1.5px solid #444; color: var(--text-secondary); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 14px; }
+  .btn-done { min-height: 36px; background: var(--accent-primary); color: #0A1A05; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0 16px; }
+
+  .summary-list { list-style: none; margin-top: 8px; }
+  .summary-list li { font-size: 13px; color: var(--text-primary); background: var(--bg-surface); padding: 10px 12px; border-radius: 8px; margin-top: 6px; }
 
   .loading-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
   .spinner { width: 36px; height: 36px; border: 3px solid #2A2A2A; border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -153,14 +150,23 @@
 <div class="phone-frame" id="phoneFrame"></div>
 
 <script>
-const STORAGE_KEYS = { name: 'gymbuddy_name', streak: 'gymbuddy_streak', lastActiveDay: 'gymbuddy_last_active_day', checkins: 'gymbuddy_checkins', plan: 'gymbuddy_plan', onboarding: 'gymbuddy_onboarding' };
+const STORAGE_KEYS = {
+  name: 'gymbuddy_name',
+  streak: 'gymbuddy_streak',
+  lastActiveDay: 'gymbuddy_last_active_day',
+  plan: 'gymbuddy_plan',
+  onboarding: 'gymbuddy_onboarding',
+  dayProgress: 'gymbuddy_day_progress',
+  sequenceProgress: 'gymbuddy_sequence_progress',
+};
 
 const STATE = {
   screen: 'profile',
   name: localStorage.getItem(STORAGE_KEYS.name) || '',
   onboarding: JSON.parse(localStorage.getItem(STORAGE_KEYS.onboarding) || '{"experience_level":null,"days_available":null,"goal":null,"injuries":""}'),
   plan: JSON.parse(localStorage.getItem(STORAGE_KEYS.plan) || 'null'),
-  checkins: JSON.parse(localStorage.getItem(STORAGE_KEYS.checkins) || '{}'),
+  dayProgress: JSON.parse(localStorage.getItem(STORAGE_KEYS.dayProgress) || '{}'),
+  sequenceProgress: JSON.parse(localStorage.getItem(STORAGE_KEYS.sequenceProgress) || '{}'),
   streak: parseInt(localStorage.getItem(STORAGE_KEYS.streak) || '0', 10),
   loading: false,
   error: null,
@@ -203,32 +209,26 @@ function parseDurationToSeconds(duration) {
   return matched && total > 0 ? Math.round(total) : null;
 }
 
-function renderPhaseItem(item, key) {
-  const seconds = parseDurationToSeconds(item.duration);
-  const timer = STATE.timers[key];
-
-  let timerControlHtml = '';
-  if (seconds) {
-    if (timer && timer.done) {
-      timerControlHtml = `<div class="timer-done">✓ Done!</div>`;
-    } else if (timer) {
-      timerControlHtml = `<div class="timer-display" id="timer-${key}">${formatTime(timer.remaining)}</div>`;
-    } else {
-      timerControlHtml = `<button class="btn-timer-start" data-timer-key="${key}" data-timer-seconds="${seconds}">▶ Start</button>`;
-    }
+function getActiveDayIndex() {
+  if (!STATE.plan || !STATE.plan.week) return 0;
+  const week = STATE.plan.week;
+  for (let i = 0; i < week.length; i++) {
+    if (!STATE.dayProgress[i]) return i;
   }
+  return week.length;
+}
 
-  return `
-    <div class="phase-item">
-      <div class="phase-item-top">
-        <div>
-          <div class="phase-item-name">${escapeHtml(item.name)}</div>
-          <div class="phase-item-meta">${escapeHtml(item.duration)}</div>
-        </div>
-        ${timerControlHtml}
-      </div>
-      <div class="phase-item-instructions">${escapeHtml(item.instructions)}</div>
-    </div>`;
+function buildDaySequence(day) {
+  const warmup = (day.warmup || []).map((item, subIndex) => ({ type: 'warmup', item, subIndex }));
+  const exercises = (day.exercises || []).map((item, subIndex) => ({ type: 'exercise', item, subIndex }));
+  const cooldown = (day.cooldown || []).map((item, subIndex) => ({ type: 'cooldown', item, subIndex }));
+  return [...warmup, ...exercises, ...cooldown];
+}
+
+function sequenceItemKey(dIdx, entry) {
+  if (entry.type === 'warmup') return `w${dIdx}-${entry.subIndex}`;
+  if (entry.type === 'cooldown') return `c${dIdx}-${entry.subIndex}`;
+  return `${dIdx}-${entry.subIndex}`;
 }
 
 // If a plan already exists from a previous visit, skip straight to home
@@ -242,6 +242,8 @@ function render() {
   else if (STATE.screen === 'goal') frame.innerHTML = renderGoal();
   else if (STATE.screen === 'loading') frame.innerHTML = renderLoading();
   else if (STATE.screen === 'home') frame.innerHTML = renderHome();
+  else if (STATE.screen === 'session') frame.innerHTML = renderSession();
+  else if (STATE.screen === 'summary') frame.innerHTML = renderSummary();
   attachListeners();
 }
 
@@ -320,98 +322,192 @@ function renderLoading() {
 }
 
 function renderHome() {
-  if (!STATE.plan) return renderGoal();
-  const totalExercises = STATE.plan.week.reduce((s, d) => s + (d.exercises ? d.exercises.length : 0), 0);
-  const doneCount = Object.values(STATE.checkins).filter(Boolean).length;
-  const pct = totalExercises ? Math.round((doneCount / totalExercises) * 100) : 0;
+  if (!STATE.plan || !STATE.plan.week) return renderGoal();
+  const week = STATE.plan.week;
+  const dIdx = getActiveDayIndex();
 
-  const days = STATE.plan.week.map((day, dIdx) => {
-    const warmup = day.warmup || [];
-    const exercises = day.exercises || [];
-    const cooldown = day.cooldown || [];
-
-    const warmupHtml = warmup.map((w, wIdx) => renderPhaseItem(w, `w${dIdx}-${wIdx}`)).join('');
-
-    const exercisesHtml = exercises.map((ex, eIdx) => {
-      const key = `${dIdx}-${eIdx}`;
-      const checked = !!STATE.checkins[key];
-      const expanded = !!STATE.expanded[key];
-      const cachedVideoId = STATE.videoCache[key];
-      const loadingVideo = !!STATE.videoLoading[key];
-      const videoError = STATE.videoError[key];
-
-      let videoAreaHtml = '';
-      if (cachedVideoId) {
-        videoAreaHtml = `<iframe class="video-embed" src="https://www.youtube.com/embed/${escapeHtml(cachedVideoId)}" title="${escapeHtml(ex.name)} demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-      } else if (loadingVideo) {
-        videoAreaHtml = `<div class="video-loading">Loading demo…</div>`;
-      } else if (videoError) {
-        videoAreaHtml = `<div class="video-error">${escapeHtml(videoError)}</div>`;
-      }
-
-      const detailHtml = expanded ? `
-          <div class="exercise-detail">
-            <div class="exercise-instructions">${escapeHtml(ex.instructions)}</div>
-            ${ex.alternative ? `<div class="exercise-alt">Alternative: ${escapeHtml(ex.alternative)}</div>` : ''}
-            <div class="coach-badge">🎥 Live AI Coach — Coming in v2</div>
-          </div>` : '';
-
-      return `
-        <div class="exercise-card">
-          <div class="exercise-row">
-            <div class="check-tap ${checked?'checked':''}" data-key="${key}">${checked?'✓':''}</div>
-            <div class="exercise-tap-area" data-expand-key="${key}">
-              <div class="exercise-name">${escapeHtml(ex.name)}</div>
-              <div class="exercise-meta">${ex.sets} sets × ${escapeHtml(ex.reps)}</div>
-            </div>
-            <button class="play-icon-btn" data-video-key="${key}" data-search-term="${escapeHtml(ex.video_search_term || ex.name)}" ${(cachedVideoId || loadingVideo) ? 'disabled' : ''} title="Watch demo">${loadingVideo ? '⏳' : '▶️'}</button>
-            <div class="expand-caret" data-expand-key="${key}">${expanded ? '▲' : '▼'}</div>
-          </div>
-          ${videoAreaHtml ? `<div class="video-area">${videoAreaHtml}</div>` : ''}
-          ${detailHtml}
-        </div>`;
-    }).join('');
-
-    const cooldownHtml = cooldown.map((c, cIdx) => renderPhaseItem(c, `c${dIdx}-${cIdx}`)).join('');
-
+  if (dIdx >= week.length) {
     return `
-    <div class="day-card">
-      <div class="day-title">${escapeHtml(day.day)}</div>
-      <div class="day-focus">${escapeHtml(day.focus)}</div>
+      <div class="screen active" style="justify-content:center; text-align:center;">
+        <div style="font-size:56px;">🎉</div>
+        <h1 style="margin-top:12px;">Week complete!</h1>
+        <p class="text-secondary" style="margin-top:8px;">You finished every day in this week's plan. Nice work, ${escapeHtml(STATE.name)}.</p>
+        <div class="progress-card-sub" style="margin-top:16px;">🔥 ${STATE.streak}-day streak</div>
+        <button class="btn-ghost" id="restartBtn" style="margin-top:24px;">Start over with new answers</button>
+      </div>`;
+  }
 
-      <div class="phase-section">
-        <div class="phase-label">🔥 Warm-up</div>
-        ${warmupHtml}
-      </div>
-
-      <div class="phase-section">
-        <div class="phase-label">💪 Main Workout</div>
-        ${exercisesHtml}
-      </div>
-
-      <div class="phase-section">
-        <div class="phase-label">🧊 Cool-down</div>
-        ${cooldownHtml}
-      </div>
-
-      <div class="diet-tip">🥗 ${escapeHtml(day.diet_tip)}</div>
-    </div>`;
-  }).join('');
+  const day = week[dIdx];
+  const warmupCount = (day.warmup || []).length;
+  const exerciseCount = (day.exercises || []).length;
+  const cooldownCount = (day.cooldown || []).length;
 
   return `
     <div class="screen active">
       <div class="eyebrow">Today</div>
-      <h1 style="font-size:22px;">Nice to have you, ${STATE.name}.</h1>
-      <div class="progress-card">
-        <div class="progress-card-top">
-          <div class="progress-card-title">This Week's Progress</div>
-          <div class="progress-card-value">${doneCount}/${totalExercises}</div>
-        </div>
-        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
-        <div class="progress-card-sub">🔥 ${STATE.streak}-day streak · Keep it going</div>
+      <h1 style="font-size:22px;">Nice to have you, ${escapeHtml(STATE.name)}.</h1>
+      <div class="progress-card-sub" style="margin-top:6px;">🔥 ${STATE.streak}-day streak · Day ${dIdx + 1} of ${week.length}</div>
+      <div class="day-card">
+        <div class="day-title">Day ${dIdx + 1} — ${escapeHtml(day.focus)}</div>
+        <div class="day-focus">${warmupCount} warmup, ${exerciseCount} exercises, ${cooldownCount} cooldown</div>
+        <button class="btn-primary" id="startDayBtn">Start Day</button>
       </div>
-      ${days}
       <button class="btn-ghost" id="restartBtn">Start over with new answers</button>
+    </div>`;
+}
+
+function renderSessionStaticItem(item, status, badge) {
+  return `
+    <div class="session-item-row">
+      <div class="session-item-badge">${badge}</div>
+      <div style="flex:1; min-width:0;">
+        <div class="session-item-name">${escapeHtml(item.name)}</div>
+      </div>
+      <div class="session-status-icon ${status === 'locked' ? 'locked' : ''}">${status === 'completed' ? '✓' : '🔒'}</div>
+    </div>`;
+}
+
+function renderSessionTimerCurrent(item, key, idx, badge) {
+  const seconds = parseDurationToSeconds(item.duration);
+  const timer = STATE.timers[key];
+  let timerControlHtml = '';
+  if (seconds) {
+    if (timer && timer.done) {
+      timerControlHtml = `<div class="timer-done">✓ Done!</div>`;
+    } else if (timer) {
+      timerControlHtml = `<div class="timer-display" id="timer-${key}">${formatTime(timer.remaining)}</div>`;
+    } else {
+      timerControlHtml = `<button class="btn-timer-start" data-timer-key="${key}" data-timer-seconds="${seconds}" data-sequence-index="${idx}">▶ Start</button>`;
+    }
+  }
+  return `
+    <div class="session-item-row">
+      <div class="session-item-badge">${badge}</div>
+      <div style="flex:1; min-width:0;">
+        <div class="session-item-name">${escapeHtml(item.name)}</div>
+        <div class="session-item-meta">${escapeHtml(item.duration)}</div>
+      </div>
+      ${timerControlHtml}
+    </div>
+    <div class="session-item-instructions">${escapeHtml(item.instructions)}</div>
+    <div class="session-item-controls">
+      <button class="btn-skip" data-skip-index="${idx}">Skip</button>
+    </div>`;
+}
+
+function renderSessionExerciseCurrent(item, key, idx) {
+  const expanded = !!STATE.expanded[key];
+  const cachedVideoId = STATE.videoCache[key];
+  const loadingVideo = !!STATE.videoLoading[key];
+  const videoError = STATE.videoError[key];
+
+  let videoAreaHtml = '';
+  if (cachedVideoId) {
+    videoAreaHtml = `<iframe class="video-embed" src="https://www.youtube.com/embed/${escapeHtml(cachedVideoId)}" title="${escapeHtml(item.name)} demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+  } else if (loadingVideo) {
+    videoAreaHtml = `<div class="video-loading">Loading demo…</div>`;
+  } else if (videoError) {
+    videoAreaHtml = `<div class="video-error">${escapeHtml(videoError)}</div>`;
+  }
+
+  const detailHtml = expanded ? `
+    <div class="session-item-instructions">${escapeHtml(item.instructions)}</div>
+    ${item.alternative ? `<div class="session-item-alt">Alternative: ${escapeHtml(item.alternative)}</div>` : ''}
+    <div class="coach-badge" style="margin-left:30px;">🎥 Live AI Coach — Coming in v2</div>` : '';
+
+  return `
+    <div class="session-item-row">
+      <div class="session-item-badge">💪</div>
+      <div class="exercise-tap-area" data-expand-key="${key}">
+        <div class="session-item-name">${escapeHtml(item.name)}</div>
+        <div class="session-item-meta">${item.sets} sets × ${escapeHtml(item.reps)}</div>
+      </div>
+      <button class="play-icon-btn" data-video-key="${key}" data-search-term="${escapeHtml(item.video_search_term || item.name)}" ${(cachedVideoId || loadingVideo) ? 'disabled' : ''} title="Watch demo">${loadingVideo ? '⏳' : '▶️'}</button>
+      <div class="expand-caret" data-expand-key="${key}">${expanded ? '▲' : '▼'}</div>
+    </div>
+    ${videoAreaHtml ? `<div class="video-area">${videoAreaHtml}</div>` : ''}
+    ${detailHtml}
+    <div class="session-item-controls">
+      <button class="btn-done" data-done-index="${idx}">✓ Done</button>
+      <button class="btn-skip" data-skip-index="${idx}">Skip</button>
+    </div>`;
+}
+
+function renderSessionItem(entry, idx, status, dIdx) {
+  const { type, item } = entry;
+  const key = sequenceItemKey(dIdx, entry);
+  const badge = type === 'warmup' ? '🔥' : type === 'cooldown' ? '🧊' : '💪';
+
+  let inner;
+  if (status === 'completed' || status === 'locked') {
+    inner = renderSessionStaticItem(item, status, badge);
+  } else if (type === 'exercise') {
+    inner = renderSessionExerciseCurrent(item, key, idx);
+  } else {
+    inner = renderSessionTimerCurrent(item, key, idx, badge);
+  }
+
+  return `<div class="session-item session-item-${status}">${inner}</div>`;
+}
+
+function renderSession() {
+  if (!STATE.plan || !STATE.plan.week) return renderGoal();
+  const dIdx = getActiveDayIndex();
+  const day = STATE.plan.week[dIdx];
+  if (!day) { STATE.screen = 'home'; return renderHome(); }
+
+  const sequence = buildDaySequence(day);
+  const total = sequence.length;
+  let currentIndex = 0;
+  while (currentIndex < total && STATE.sequenceProgress[currentIndex]) currentIndex++;
+
+  const itemsHtml = sequence.map((entry, idx) => {
+    const status = idx < currentIndex ? 'completed' : idx === currentIndex ? 'current' : 'locked';
+    return renderSessionItem(entry, idx, status, dIdx);
+  }).join('');
+
+  const allDone = currentIndex >= total;
+  const pct = total ? Math.round((Math.min(currentIndex, total) / total) * 100) : 0;
+
+  return `
+    <div class="screen active">
+      <div class="eyebrow">Day ${dIdx + 1} of ${STATE.plan.week.length}</div>
+      <h1 style="font-size:22px;">${escapeHtml(day.focus)}</h1>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+      <div class="session-progress-label">${Math.min(currentIndex, total)} of ${total} complete</div>
+      <div>
+        ${itemsHtml}
+      </div>
+      ${allDone ? `<button class="btn-primary" id="finishDayBtn" style="margin-top:18px;">Finish Day</button>` : ''}
+      <button class="btn-ghost" id="backToHomeBtn">Back to Home</button>
+    </div>`;
+}
+
+function renderSummary() {
+  if (!STATE.plan || !STATE.plan.week) return renderGoal();
+  const dIdx = getActiveDayIndex();
+  const day = STATE.plan.week[dIdx];
+  if (!day) { STATE.screen = 'home'; return renderHome(); }
+
+  const meals = (day.meal_suggestions || []).map((m) => `<li>${escapeHtml(m)}</li>`).join('');
+  const cravings = (day.craving_alternatives || []).map((c) => `<li>${escapeHtml(c)}</li>`).join('');
+
+  return `
+    <div class="screen active">
+      <div style="text-align:center;">
+        <div style="font-size:48px;">🎉</div>
+        <h1 style="margin-top:10px;">Day ${dIdx + 1} Complete!</h1>
+      </div>
+      <div class="progress-card">
+        <div class="progress-card-title">Estimated Calories Burned</div>
+        <div class="progress-card-value" style="margin-top:6px;">~${escapeHtml(day.calorie_estimate)}</div>
+        <div class="progress-card-sub">This is a rough estimate, not precise tracking.</div>
+      </div>
+      <div class="phase-label" style="margin-top:18px;">🍽 Post-Workout Meal Ideas</div>
+      <ul class="summary-list">${meals}</ul>
+      <div class="phase-label" style="margin-top:18px;">🍫 Craving Swaps</div>
+      <ul class="summary-list">${cravings}</ul>
+      <button class="btn-primary" id="markDayCompleteBtn" style="margin-top:24px;">Mark Day Complete &amp; Continue</button>
     </div>`;
 }
 
@@ -447,16 +543,39 @@ function attachListeners() {
   const generateBtn = document.getElementById('generatePlanBtn');
   if (generateBtn) generateBtn.addEventListener('click', generatePlan);
 
-  document.querySelectorAll('.check-tap').forEach((el) => {
-    el.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const key = el.dataset.key;
-      const wasChecked = !!STATE.checkins[key];
-      STATE.checkins[key] = !wasChecked;
-      localStorage.setItem(STORAGE_KEYS.checkins, JSON.stringify(STATE.checkins));
-      if (!wasChecked) bumpStreakIfNeeded();
-      render();
-    });
+  const startDayBtn = document.getElementById('startDayBtn');
+  if (startDayBtn) startDayBtn.addEventListener('click', () => {
+    STATE.screen = 'session';
+    render();
+  });
+
+  const backToHomeBtn = document.getElementById('backToHomeBtn');
+  if (backToHomeBtn) backToHomeBtn.addEventListener('click', () => {
+    STATE.screen = 'home';
+    render();
+  });
+
+  const finishDayBtn = document.getElementById('finishDayBtn');
+  if (finishDayBtn) finishDayBtn.addEventListener('click', () => {
+    STATE.screen = 'summary';
+    render();
+  });
+
+  const markDayCompleteBtn = document.getElementById('markDayCompleteBtn');
+  if (markDayCompleteBtn) markDayCompleteBtn.addEventListener('click', () => {
+    const dIdx = getActiveDayIndex();
+    clearAllTimers();
+    STATE.dayProgress[dIdx] = true;
+    STATE.sequenceProgress = {};
+    STATE.expanded = {};
+    STATE.videoCache = {};
+    STATE.videoLoading = {};
+    STATE.videoError = {};
+    localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
+    localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
+    bumpStreakIfNeeded();
+    STATE.screen = 'home';
+    render();
   });
 
   document.querySelectorAll('[data-expand-key]').forEach((el) => {
@@ -499,9 +618,27 @@ function attachListeners() {
       const totalSeconds = parseInt(btn.dataset.timerSeconds, 10);
       if (!totalSeconds || STATE.timers[key]) return;
       const timer = { remaining: totalSeconds, total: totalSeconds, done: false, intervalId: null };
+      if (btn.dataset.sequenceIndex !== undefined) timer.sequenceIndex = parseInt(btn.dataset.sequenceIndex, 10);
       STATE.timers[key] = timer;
       timer.intervalId = setInterval(() => tickTimer(key), 1000);
       render();
+    });
+  });
+
+  document.querySelectorAll('.btn-skip[data-skip-index]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.skipIndex, 10);
+      Object.values(STATE.timers).forEach((t) => {
+        if (t.sequenceIndex === idx && t.intervalId) { clearInterval(t.intervalId); t.intervalId = null; }
+      });
+      advanceSequence(idx);
+    });
+  });
+
+  document.querySelectorAll('.btn-done[data-done-index]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.doneIndex, 10);
+      advanceSequence(idx);
     });
   });
 
@@ -510,14 +647,26 @@ function attachListeners() {
     if (!confirm('This clears your current plan and progress. Continue?')) return;
     clearAllTimers();
     localStorage.removeItem(STORAGE_KEYS.plan);
-    localStorage.removeItem(STORAGE_KEYS.checkins);
+    localStorage.removeItem(STORAGE_KEYS.dayProgress);
+    localStorage.removeItem(STORAGE_KEYS.sequenceProgress);
     localStorage.removeItem(STORAGE_KEYS.onboarding);
     STATE.plan = null;
-    STATE.checkins = {};
+    STATE.dayProgress = {};
+    STATE.sequenceProgress = {};
+    STATE.expanded = {};
+    STATE.videoCache = {};
+    STATE.videoLoading = {};
+    STATE.videoError = {};
     STATE.onboarding = { experience_level: null, days_available: null, goal: null, injuries: '' };
     STATE.screen = 'experience';
     render();
   });
+}
+
+function advanceSequence(index) {
+  STATE.sequenceProgress[index] = true;
+  localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
+  render();
 }
 
 function tickTimer(key) {
@@ -529,7 +678,11 @@ function tickTimer(key) {
     timer.done = true;
     clearInterval(timer.intervalId);
     timer.intervalId = null;
-    render();
+    if (timer.sequenceIndex !== undefined) {
+      advanceSequence(timer.sequenceIndex);
+    } else {
+      render();
+    }
   } else {
     const el = document.getElementById(`timer-${key}`);
     if (el) el.textContent = formatTime(timer.remaining);
@@ -555,7 +708,11 @@ async function generatePlan() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to generate plan');
     STATE.plan = data;
+    STATE.dayProgress = {};
+    STATE.sequenceProgress = {};
     localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
+    localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
     STATE.screen = 'home';
     render();
   } catch (err) {
