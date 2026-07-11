@@ -1,6 +1,6 @@
 // api/generate-plan.js
 // Vercel serverless function — runs server-side only.
-// The ANTHROPIC_API_KEY is read from environment variables (set in Vercel dashboard,
+// The GEMINI_API_KEY is read from environment variables (set in Vercel dashboard,
 // never committed to the repo, never exposed to the browser).
 
 export default async function handler(req, res) {
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'Server misconfigured: missing API key' });
   }
@@ -38,19 +38,23 @@ Rules:
 {"week":[{"day":"Monday","focus":"","exercises":[{"name":"","sets":0,"reps":"","video_search_term":"","safety_note":""}],"diet_tip":""}]}`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 4000,
+            responseMimeType: 'application/json',
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errText = await response.text();
@@ -58,12 +62,12 @@ Rules:
     }
 
     const data = await response.json();
-    const textBlock = (data.content || []).find((b) => b.type === 'text');
-    if (!textBlock) {
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
       return res.status(502).json({ error: 'No text response from model' });
     }
 
-    let cleaned = textBlock.text
+    let cleaned = text
       .trim()
       .replace(/^```json/, '')
       .replace(/^```/, '')
