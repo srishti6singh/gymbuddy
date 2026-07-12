@@ -37,12 +37,11 @@ Rules:
 - "cooldown": 1-2 items, each with name, duration, and instructions (exactly 1 short sentence)
 - If injuries are listed, exclude contraindicated movements entirely and fold any relevant safety guidance into the "instructions" field of affected items — do not use a separate safety field
 - Include one short, practical diet_tip per day (not a full meal plan)
-- "calorie_estimate": a rough whole-number estimate of calories burned in that day's session (e.g. 250) — clearly an estimate, not precise tracking
 - "meal_suggestions": exactly 2 short post-workout meal ideas, 1 short phrase each
 - "craving_alternatives": exactly 2 short healthy swap ideas for common cravings, 1 short phrase each
 - Be concise everywhere. Do not add extra explanation, elaboration, or commentary beyond what's requested — every field should be as short as possible while staying useful.
 - Output STRICT JSON ONLY. No markdown, no prose, no code fences, no explanations before or after. Keep names and video_search_terms short (under 6 words). Match this exact schema:
-{"week":[{"day":"","focus":"","calorie_estimate":0,"warmup":[{"name":"","duration":"","instructions":""}],"exercises":[{"name":"","sets":0,"reps":"","instructions":"","alternative":"","video_search_term":""}],"cooldown":[{"name":"","duration":"","instructions":""}],"diet_tip":"","meal_suggestions":["",""],"craving_alternatives":["",""]}]}`;
+{"week":[{"day":"","focus":"","warmup":[{"name":"","duration":"","instructions":""}],"exercises":[{"name":"","sets":0,"reps":"","instructions":"","alternative":"","video_search_term":""}],"cooldown":[{"name":"","duration":"","instructions":""}],"diet_tip":"","meal_suggestions":["",""],"craving_alternatives":["",""]}]}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);

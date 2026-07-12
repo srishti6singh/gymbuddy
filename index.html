@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <style>
   :root {
     --bg-base: #121212;
@@ -87,7 +88,6 @@
   .progress-dots span.done { background: var(--accent-primary); }
 
   .progress-card { background: var(--bg-surface); border-radius: var(--radius-lg); padding: 20px; margin-top: 12px; }
-  .progress-card-top { display: flex; justify-content: space-between; align-items: baseline; }
   .progress-card-title { font-size: 15px; font-weight: 700; }
   .progress-card-value { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; color: var(--accent-primary); }
   .progress-track { height: 10px; background: #2A2A2A; border-radius: 5px; overflow: hidden; margin-top: 12px; }
@@ -102,7 +102,6 @@
 
   .btn-timer-start { min-height: 32px; background: none; border: 1.5px solid var(--accent-primary); color: var(--accent-primary); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 12px; flex-shrink: 0; white-space: nowrap; }
   .timer-display { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 800; color: var(--accent-primary); flex-shrink: 0; min-width: 46px; text-align: right; }
-  .timer-done { font-size: 13px; font-weight: 700; color: var(--accent-primary); flex-shrink: 0; }
 
   .exercise-tap-area { flex: 1; min-width: 0; cursor: pointer; }
   .play-icon-btn {
@@ -112,7 +111,6 @@
   }
   .play-icon-btn:disabled { opacity: 0.4; cursor: default; }
   .expand-caret { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; cursor: pointer; padding: 4px; }
-  .coach-badge { display: inline-block; font-size: 11px; color: var(--text-secondary); background: var(--bg-surface-raised); padding: 4px 8px; border-radius: 6px; margin-top: 8px; opacity: 0.6; cursor: default; }
   .video-area { padding: 0 0 4px 32px; margin-top: 2px; }
   .video-embed { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); margin-top: 6px; border: none; display: block; }
   .video-loading { font-size: 12px; color: var(--text-secondary); padding: 4px 0; }
@@ -130,13 +128,36 @@
   .session-status-icon { font-size: 15px; flex-shrink: 0; color: var(--accent-primary); }
   .session-status-icon.locked { color: var(--text-secondary); }
   .session-item-instructions { font-size: 12px; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; padding-left: 30px; }
-  .session-item-alt { font-size: 12px; color: var(--accent-warn); margin-top: 6px; padding-left: 30px; }
-  .session-item-controls { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-left: 30px; }
+  .session-item-controls { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-left: 30px; flex-wrap: wrap; }
   .btn-skip { min-height: 36px; background: none; border: 1.5px solid #444; color: var(--text-secondary); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 14px; }
   .btn-done { min-height: 36px; background: var(--accent-primary); color: #0A1A05; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0 16px; }
 
+  .set-label { font-size: 13px; font-weight: 700; }
+  .rep-counter-wrap { text-align: center; padding: 12px 0 4px; }
+  .rep-number { font-family: 'Sora', sans-serif; font-size: 64px; font-weight: 800; color: var(--accent-primary); line-height: 1; display: inline-block; }
+  .rep-number.pulse { animation: repPulse 0.4s ease; }
+  @keyframes repPulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  .skip-exercise-link { background: none; border: none; color: var(--text-secondary); font-size: 12px; text-decoration: underline; cursor: pointer; margin-top: 10px; padding: 4px 0 0 30px; display: block; }
+  .alt-swap-btn { background: none; border: 1.5px solid var(--accent-warn); color: var(--accent-warn); border-radius: 8px; font-size: 12px; font-weight: 600; padding: 6px 10px; margin: 8px 0 0 30px; cursor: pointer; display: inline-block; }
+  .swap-label { font-size: 11px; color: var(--accent-warn); margin-top: 2px; }
+
+  .meal-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .meal-chip {
+    flex: 1 1 40%; min-height: 44px; background: var(--bg-surface); border: 2px solid #2E2E2E;
+    border-radius: var(--radius-sm); color: var(--text-primary); font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .meal-chip.selected { border-color: var(--accent-primary); background: rgba(57,255,20,0.08); color: var(--accent-primary); }
+
   .summary-list { list-style: none; margin-top: 8px; }
   .summary-list li { font-size: 13px; color: var(--text-primary); background: var(--bg-surface); padding: 10px 12px; border-radius: 8px; margin-top: 6px; }
+
+  .weight-input-wrap { display: flex; align-items: center; gap: 12px; margin-top: 24px; }
+  .weight-input {
+    min-height: 56px; background: var(--bg-surface); border: 2px solid #2E2E2E; border-radius: 14px;
+    padding: 0 16px; color: white; font-size: 18px; width: 100%; font-family: 'Inter', sans-serif;
+  }
+  .weight-unit { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-secondary); }
 
   .loading-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
   .spinner { width: 36px; height: 36px; border: 3px solid #2A2A2A; border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -158,15 +179,23 @@ const STORAGE_KEYS = {
   onboarding: 'gymbuddy_onboarding',
   dayProgress: 'gymbuddy_day_progress',
   sequenceProgress: 'gymbuddy_sequence_progress',
+  workLog: 'gymbuddy_work_log',
 };
+
+const REST_SECONDS = 45;      // rest between sets (NASM: 30-60s for bodyweight work)
+const SECONDS_PER_REP = 3;    // ~2/0/2 cadence for beginners
+const MET_WARMCOOL = 3.5;
+const MET_EXERCISE = 5.0;
+const DEFAULT_WEIGHT_KG = 70; // fallback for plans generated before the weight step existed
 
 const STATE = {
   screen: 'profile',
   name: localStorage.getItem(STORAGE_KEYS.name) || '',
-  onboarding: JSON.parse(localStorage.getItem(STORAGE_KEYS.onboarding) || '{"experience_level":null,"days_available":null,"goal":null,"injuries":""}'),
+  onboarding: JSON.parse(localStorage.getItem(STORAGE_KEYS.onboarding) || '{"experience_level":null,"days_available":null,"goal":null,"injuries":"","weight":null}'),
   plan: JSON.parse(localStorage.getItem(STORAGE_KEYS.plan) || 'null'),
   dayProgress: JSON.parse(localStorage.getItem(STORAGE_KEYS.dayProgress) || '{}'),
   sequenceProgress: JSON.parse(localStorage.getItem(STORAGE_KEYS.sequenceProgress) || '{}'),
+  workLog: JSON.parse(localStorage.getItem(STORAGE_KEYS.workLog) || '{}'),
   streak: parseInt(localStorage.getItem(STORAGE_KEYS.streak) || '0', 10),
   loading: false,
   error: null,
@@ -174,7 +203,10 @@ const STATE = {
   videoCache: {},
   videoLoading: {},
   videoError: {},
-  timers: {},
+  activeTimer: null,
+  setFlow: null,
+  swaps: {},
+  nextMeal: null,
 };
 
 function escapeHtml(value) {
@@ -209,6 +241,19 @@ function parseDurationToSeconds(duration) {
   return matched && total > 0 ? Math.round(total) : null;
 }
 
+// "12" / "10 per leg" -> {type:'count', value:N}; "30 seconds" / "1 min" -> {type:'time', seconds:N}
+function parseReps(reps) {
+  if (reps === null || reps === undefined) return { type: 'count', value: 10 };
+  const str = String(reps).toLowerCase();
+  const secMatch = str.match(/(\d+(?:\.\d+)?)\s*(?:sec|second)/);
+  if (secMatch) return { type: 'time', seconds: Math.round(parseFloat(secMatch[1])) };
+  const minMatch = str.match(/(\d+(?:\.\d+)?)\s*(?:min|minute)/);
+  if (minMatch) return { type: 'time', seconds: Math.round(parseFloat(minMatch[1]) * 60) };
+  const numMatch = str.match(/(\d+)/);
+  if (numMatch) return { type: 'count', value: parseInt(numMatch[1], 10) };
+  return { type: 'count', value: 10 };
+}
+
 function getActiveDayIndex() {
   if (!STATE.plan || !STATE.plan.week) return 0;
   const week = STATE.plan.week;
@@ -231,6 +276,205 @@ function sequenceItemKey(dIdx, entry) {
   return `${dIdx}-${entry.subIndex}`;
 }
 
+function videoStateKey(key) {
+  return STATE.swaps[key] ? `${key}:alt` : key;
+}
+
+function getExerciseDisplay(ex, key) {
+  const swapped = !!(STATE.swaps[key] && ex.alternative);
+  return {
+    swapped,
+    name: swapped ? ex.alternative : ex.name,
+    searchTerm: swapped ? ex.alternative : (ex.video_search_term || ex.name),
+    originalName: ex.name,
+  };
+}
+
+// ---------- Timer engine (single active timer: phase countdown, rep counter, or rest) ----------
+
+function persistWorkLog() {
+  localStorage.setItem(STORAGE_KEYS.workLog, JSON.stringify(STATE.workLog));
+}
+
+function startActiveTimer(config) {
+  stopActiveTimer();
+  STATE.activeTimer = config;
+  config.intervalId = setInterval(tick, 1000);
+}
+
+function stopActiveTimer() {
+  if (STATE.activeTimer && STATE.activeTimer.intervalId) clearInterval(STATE.activeTimer.intervalId);
+  STATE.activeTimer = null;
+}
+
+function tick() {
+  const t = STATE.activeTimer;
+  if (!t || t.paused) return;
+  t.elapsed += 1;
+  if (t.logWork) {
+    STATE.workLog[t.key] = (STATE.workLog[t.key] || 0) + 1;
+    persistWorkLog();
+  }
+  if (t.elapsed >= t.totalSeconds) {
+    completeActiveTimer();
+    return;
+  }
+  // Targeted DOM updates — avoid full render (would restart screen animations every second)
+  if (t.kind === 'reps' && t.mode === 'reps') {
+    const rep = Math.min(Math.floor(t.elapsed / SECONDS_PER_REP) + 1, t.totalReps);
+    const el = document.getElementById('repNumber');
+    if (el && el.textContent !== String(rep)) {
+      el.textContent = rep;
+      el.classList.remove('pulse');
+      void el.offsetWidth;
+      el.classList.add('pulse');
+    }
+  } else {
+    const el = document.getElementById('activeCountdown');
+    if (el) el.textContent = formatTime(t.totalSeconds - t.elapsed);
+  }
+}
+
+function completeActiveTimer() {
+  const t = STATE.activeTimer;
+  if (!t) return;
+  stopActiveTimer();
+  if (t.kind === 'phase') {
+    advanceSequence(t.sequenceIndex);
+    return;
+  }
+  if (t.kind === 'reps') {
+    if (!STATE.setFlow || STATE.setFlow.setIndex >= t.totalSets - 1) {
+      // Final set complete — exercise done
+      STATE.setFlow = null;
+      fireConfetti(false);
+      advanceSequence(t.sequenceIndex);
+    } else {
+      // More sets remain — automatic rest countdown
+      startActiveTimer({
+        key: t.key, kind: 'rest', totalSeconds: REST_SECONDS, elapsed: 0,
+        paused: false, logWork: false, sequenceIndex: t.sequenceIndex, totalSets: t.totalSets,
+      });
+      render();
+    }
+    return;
+  }
+  if (t.kind === 'rest') {
+    if (STATE.setFlow) STATE.setFlow.setIndex += 1;
+    render();
+  }
+}
+
+function togglePauseActiveTimer() {
+  if (!STATE.activeTimer) return;
+  STATE.activeTimer.paused = !STATE.activeTimer.paused;
+  render();
+}
+
+function startPhaseTimerFor(idx) {
+  const dIdx = getActiveDayIndex();
+  const seq = buildDaySequence(STATE.plan.week[dIdx]);
+  const entry = seq[idx];
+  if (!entry || entry.type === 'exercise') return;
+  const key = sequenceItemKey(dIdx, entry);
+  const seconds = parseDurationToSeconds(entry.item.duration);
+  if (!seconds) return;
+  startActiveTimer({
+    key, kind: 'phase', totalSeconds: seconds, elapsed: 0,
+    paused: false, logWork: true, sequenceIndex: idx,
+  });
+  render();
+}
+
+function startSetTimerFor(idx) {
+  const dIdx = getActiveDayIndex();
+  const seq = buildDaySequence(STATE.plan.week[dIdx]);
+  const entry = seq[idx];
+  if (!entry || entry.type !== 'exercise') return;
+  const key = sequenceItemKey(dIdx, entry);
+  const ex = entry.item;
+  const totalSets = parseInt(ex.sets, 10) || 1;
+  if (!STATE.setFlow || STATE.setFlow.key !== key) STATE.setFlow = { key, setIndex: 0 };
+  const repsInfo = parseReps(ex.reps);
+  startActiveTimer({
+    key,
+    kind: 'reps',
+    mode: repsInfo.type === 'count' ? 'reps' : 'countdown',
+    totalReps: repsInfo.type === 'count' ? repsInfo.value : null,
+    totalSeconds: repsInfo.type === 'count' ? repsInfo.value * SECONDS_PER_REP : repsInfo.seconds,
+    elapsed: 0, paused: false, logWork: true, sequenceIndex: idx, totalSets,
+  });
+  render();
+}
+
+function skipCurrentSet() {
+  const t = STATE.activeTimer;
+  if (!t || t.kind !== 'reps') return;
+  const totalSets = t.totalSets;
+  const seqIdx = t.sequenceIndex;
+  stopActiveTimer();
+  if (!STATE.setFlow || STATE.setFlow.setIndex >= totalSets - 1) {
+    STATE.setFlow = null;
+    advanceSequence(seqIdx);
+  } else {
+    STATE.setFlow.setIndex += 1; // skipping a set also skips its rest
+    render();
+  }
+}
+
+function skipRest() {
+  const t = STATE.activeTimer;
+  if (!t || t.kind !== 'rest') return;
+  stopActiveTimer();
+  if (STATE.setFlow) STATE.setFlow.setIndex += 1;
+  render();
+}
+
+function skipSequenceItem(idx) {
+  stopActiveTimer();
+  STATE.setFlow = null;
+  advanceSequence(idx);
+}
+
+function advanceSequence(index) {
+  STATE.sequenceProgress[index] = true;
+  localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
+  render();
+}
+
+// ---------- Calories from logged active time ----------
+
+function computeDayCalories() {
+  let warmcoolSeconds = 0;
+  let exerciseSeconds = 0;
+  Object.entries(STATE.workLog).forEach(([key, sec]) => {
+    if (key[0] === 'w' || key[0] === 'c') warmcoolSeconds += sec;
+    else exerciseSeconds += sec;
+  });
+  const weightRaw = parseFloat(STATE.onboarding.weight);
+  const hasWeight = !isNaN(weightRaw) && weightRaw > 0;
+  const weight = hasWeight ? weightRaw : DEFAULT_WEIGHT_KG;
+  // kcal = MET × kg × hours
+  const kcal = MET_WARMCOOL * weight * (warmcoolSeconds / 3600) + MET_EXERCISE * weight * (exerciseSeconds / 3600);
+  const activeSeconds = warmcoolSeconds + exerciseSeconds;
+  return {
+    kcal: Math.round(kcal),
+    activeMinutes: Math.round(activeSeconds / 60),
+    activeSeconds,
+    usedDefaultWeight: !hasWeight,
+  };
+}
+
+function fireConfetti(big) {
+  if (typeof confetti !== 'function') return;
+  if (big) {
+    confetti({ particleCount: 160, spread: 100, origin: { y: 0.6 } });
+    setTimeout(() => { if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 130, origin: { y: 0.4 } }); }, 250);
+  } else {
+    confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+  }
+}
+
 // If a plan already exists from a previous visit, skip straight to home
 if (STATE.plan && STATE.name) STATE.screen = 'home';
 
@@ -240,11 +484,16 @@ function render() {
   else if (STATE.screen === 'experience') frame.innerHTML = renderExperience();
   else if (STATE.screen === 'days') frame.innerHTML = renderDays();
   else if (STATE.screen === 'goal') frame.innerHTML = renderGoal();
+  else if (STATE.screen === 'weight') frame.innerHTML = renderWeight();
   else if (STATE.screen === 'loading') frame.innerHTML = renderLoading();
   else if (STATE.screen === 'home') frame.innerHTML = renderHome();
   else if (STATE.screen === 'session') frame.innerHTML = renderSession();
   else if (STATE.screen === 'summary') frame.innerHTML = renderSummary();
   attachListeners();
+}
+
+function renderDots(done) {
+  return `<div class="progress-dots">${[1, 2, 3, 4].map((i) => `<span class="${i <= done ? 'done' : ''}"></span>`).join('')}</div>`;
 }
 
 function renderProfile() {
@@ -253,7 +502,7 @@ function renderProfile() {
       <div class="eyebrow">Welcome</div>
       <h1>What should we call you?</h1>
       <p class="text-secondary" style="margin-top:8px;">No password needed — just personalizes your plan on this device.</p>
-      <input id="nameInput" type="text" placeholder="Your name" value="${STATE.name}"
+      <input id="nameInput" type="text" placeholder="Your name" value="${escapeHtml(STATE.name)}"
         style="margin-top:24px; min-height:56px; background:var(--bg-surface); border:2px solid #2E2E2E; border-radius:14px; padding:0 16px; color:white; font-size:16px; width:100%; font-family:'Inter',sans-serif;" />
       <button class="btn-primary" style="margin-top:20px;" id="profileContinueBtn">Continue</button>
     </div>`;
@@ -263,9 +512,9 @@ function renderExperience() {
   const exp = STATE.onboarding.experience_level;
   return `
     <div class="screen active">
-      <div class="progress-dots"><span class="done"></span><span></span><span></span></div>
+      ${renderDots(1)}
       <div class="eyebrow">GymBuddy</div>
-      <h1>Hi ${STATE.name} 👋</h1>
+      <h1>Hi ${escapeHtml(STATE.name)} 👋</h1>
       <div class="avatar-dock" style="margin-top:18px;">
         <div class="avatar-bubble">🧑‍🏫</div>
         <div class="avatar-speech">Are you a beginner, or do you already train regularly?</div>
@@ -283,7 +532,7 @@ function renderDays() {
   const days = STATE.onboarding.days_available;
   return `
     <div class="screen active">
-      <div class="progress-dots"><span class="done"></span><span class="done"></span><span></span></div>
+      ${renderDots(2)}
       <h2>How many days a week can you train?</h2>
       <div class="option-stack" data-field="days_available" style="margin-top:16px;">
         <button class="option-chip ${days==='2'?'selected':''}" data-value="2">2 days</button>
@@ -299,7 +548,7 @@ function renderGoal() {
   const goal = STATE.onboarding.goal;
   return `
     <div class="screen active">
-      <div class="progress-dots"><span class="done"></span><span class="done"></span><span class="done"></span></div>
+      ${renderDots(3)}
       <h2>What's your main goal?</h2>
       <div class="option-stack" data-field="goal" style="margin-top:16px;">
         <button class="option-chip ${goal==='general_fitness'?'selected':''}" data-value="general_fitness">⚡ General fitness</button>
@@ -307,8 +556,28 @@ function renderGoal() {
         <button class="option-chip ${goal==='build_muscle'?'selected':''}" data-value="build_muscle">💪 Build muscle</button>
         <button class="option-chip ${goal==='get_stronger'?'selected':''}" data-value="get_stronger">🏋️ Get stronger</button>
       </div>
-      <button class="btn-primary" id="generatePlanBtn" ${!goal?'disabled':''}>Generate My Week</button>
-      ${STATE.error ? `<div class="error-box">${STATE.error}</div>` : ''}
+      <button class="btn-primary" id="continueBtn" ${!goal?'disabled':''}>Continue</button>
+    </div>`;
+}
+
+function isValidWeight(value) {
+  const v = parseFloat(value);
+  return !isNaN(v) && v >= 20 && v <= 300;
+}
+
+function renderWeight() {
+  const weight = STATE.onboarding.weight || '';
+  return `
+    <div class="screen active">
+      ${renderDots(4)}
+      <h2>What's your weight?</h2>
+      <p class="text-secondary" style="margin-top:8px;">Used only to estimate calories you burn each session. Stays on this device.</p>
+      <div class="weight-input-wrap">
+        <input id="weightInput" class="weight-input" type="number" inputmode="decimal" min="20" max="300" step="0.5" placeholder="e.g. 65" value="${escapeHtml(weight)}" />
+        <span class="weight-unit">kg</span>
+      </div>
+      <button class="btn-primary" id="generatePlanBtn" style="margin-top:20px;" ${isValidWeight(weight)?'':'disabled'}>Generate My Week</button>
+      ${STATE.error ? `<div class="error-box">${escapeHtml(STATE.error)}</div>` : ''}
     </div>`;
 }
 
@@ -356,30 +625,32 @@ function renderHome() {
     </div>`;
 }
 
-function renderSessionStaticItem(item, status, badge) {
+// ---------- Session screen ----------
+
+function renderSessionStaticItem(entry, key, status, badge) {
+  const disp = entry.type === 'exercise' ? getExerciseDisplay(entry.item, key) : { name: entry.item.name };
   return `
     <div class="session-item-row">
       <div class="session-item-badge">${badge}</div>
       <div style="flex:1; min-width:0;">
-        <div class="session-item-name">${escapeHtml(item.name)}</div>
+        <div class="session-item-name">${escapeHtml(disp.name)}</div>
       </div>
       <div class="session-status-icon ${status === 'locked' ? 'locked' : ''}">${status === 'completed' ? '✓' : '🔒'}</div>
     </div>`;
 }
 
-function renderSessionTimerCurrent(item, key, idx, badge) {
+function renderSessionTimerCurrent(entry, key, idx, badge) {
+  const item = entry.item;
   const seconds = parseDurationToSeconds(item.duration);
-  const timer = STATE.timers[key];
-  let timerControlHtml = '';
-  if (seconds) {
-    if (timer && timer.done) {
-      timerControlHtml = `<div class="timer-done">✓ Done!</div>`;
-    } else if (timer) {
-      timerControlHtml = `<div class="timer-display" id="timer-${key}">${formatTime(timer.remaining)}</div>`;
-    } else {
-      timerControlHtml = `<button class="btn-timer-start" data-timer-key="${key}" data-timer-seconds="${seconds}" data-sequence-index="${idx}">▶ Start</button>`;
-    }
+  const t = (STATE.activeTimer && STATE.activeTimer.key === key && STATE.activeTimer.kind === 'phase') ? STATE.activeTimer : null;
+
+  let rightHtml = '';
+  if (t) {
+    rightHtml = `<div class="timer-display" id="activeCountdown">${formatTime(t.totalSeconds - t.elapsed)}</div>`;
+  } else if (seconds) {
+    rightHtml = `<button class="btn-timer-start" data-phase-start="${idx}">▶ Start</button>`;
   }
+
   return `
     <div class="session-item-row">
       <div class="session-item-badge">${badge}</div>
@@ -387,23 +658,73 @@ function renderSessionTimerCurrent(item, key, idx, badge) {
         <div class="session-item-name">${escapeHtml(item.name)}</div>
         <div class="session-item-meta">${escapeHtml(item.duration)}</div>
       </div>
-      ${timerControlHtml}
+      ${rightHtml}
     </div>
     <div class="session-item-instructions">${escapeHtml(item.instructions)}</div>
     <div class="session-item-controls">
+      ${t ? `<button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>` : ''}
       <button class="btn-skip" data-skip-index="${idx}">Skip</button>
     </div>`;
 }
 
-function renderSessionExerciseCurrent(item, key, idx) {
+function renderSetFlow(ex, key, idx, totalSets) {
+  const t = STATE.activeTimer;
+  const sf = STATE.setFlow;
+  const active = t && t.key === key;
+
+  if (active && t.kind === 'reps' && t.mode === 'reps') {
+    const rep = Math.min(Math.floor(t.elapsed / SECONDS_PER_REP) + 1, t.totalReps);
+    return `
+      <div class="rep-counter-wrap">
+        <div class="rep-number pulse" id="repNumber">${rep}</div>
+        <div class="session-item-meta">Set ${sf.setIndex + 1} of ${totalSets} · ${t.totalReps} reps</div>
+      </div>
+      <div class="session-item-controls">
+        <button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>
+        <button class="btn-skip" data-skip-set>Skip Set</button>
+      </div>`;
+  }
+  if (active && t.kind === 'reps') {
+    return `
+      <div class="rep-counter-wrap">
+        <div class="rep-number" id="activeCountdown">${formatTime(t.totalSeconds - t.elapsed)}</div>
+        <div class="session-item-meta">Set ${sf.setIndex + 1} of ${totalSets} · hold until 0:00</div>
+      </div>
+      <div class="session-item-controls">
+        <button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>
+        <button class="btn-skip" data-skip-set>Skip Set</button>
+      </div>`;
+  }
+  if (active && t.kind === 'rest') {
+    return `
+      <div class="session-item-controls">
+        <div class="set-label">Rest — next set in <span class="timer-display" id="activeCountdown">${formatTime(t.totalSeconds - t.elapsed)}</span></div>
+      </div>
+      <div class="session-item-controls">
+        <button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>
+        <button class="btn-skip" data-skip-rest>Skip Rest</button>
+      </div>`;
+  }
+  return `
+    <div class="session-item-controls">
+      <div class="set-label">Set ${(sf ? sf.setIndex : 0) + 1} of ${totalSets}</div>
+      <button class="btn-done" data-start-set="${idx}">▶ Start Set</button>
+    </div>`;
+}
+
+function renderSessionExerciseCurrent(entry, key, idx) {
+  const ex = entry.item;
+  const disp = getExerciseDisplay(ex, key);
+  const vKey = videoStateKey(key);
   const expanded = !!STATE.expanded[key];
-  const cachedVideoId = STATE.videoCache[key];
-  const loadingVideo = !!STATE.videoLoading[key];
-  const videoError = STATE.videoError[key];
+  const cachedVideoId = STATE.videoCache[vKey];
+  const loadingVideo = !!STATE.videoLoading[vKey];
+  const videoError = STATE.videoError[vKey];
+  const totalSets = parseInt(ex.sets, 10) || 1;
 
   let videoAreaHtml = '';
   if (cachedVideoId) {
-    videoAreaHtml = `<iframe class="video-embed" src="https://www.youtube.com/embed/${escapeHtml(cachedVideoId)}" title="${escapeHtml(item.name)} demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    videoAreaHtml = `<iframe class="video-embed" src="https://www.youtube.com/embed/${escapeHtml(cachedVideoId)}" title="${escapeHtml(disp.name)} demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
   } else if (loadingVideo) {
     videoAreaHtml = `<div class="video-loading">Loading demo…</div>`;
   } else if (videoError) {
@@ -411,40 +732,37 @@ function renderSessionExerciseCurrent(item, key, idx) {
   }
 
   const detailHtml = expanded ? `
-    <div class="session-item-instructions">${escapeHtml(item.instructions)}</div>
-    ${item.alternative ? `<div class="session-item-alt">Alternative: ${escapeHtml(item.alternative)}</div>` : ''}
-    <div class="coach-badge" style="margin-left:30px;">🎥 Live AI Coach — Coming in v2</div>` : '';
+    <div class="session-item-instructions">${escapeHtml(ex.instructions)}</div>
+    ${ex.alternative ? `<button class="alt-swap-btn" data-swap-key="${key}">⇄ ${disp.swapped ? `Switch back to: ${escapeHtml(ex.name)}` : `Alternative: ${escapeHtml(ex.alternative)}`}</button>` : ''}` : '';
 
   return `
     <div class="session-item-row">
       <div class="session-item-badge">💪</div>
       <div class="exercise-tap-area" data-expand-key="${key}">
-        <div class="session-item-name">${escapeHtml(item.name)}</div>
-        <div class="session-item-meta">${item.sets} sets × ${escapeHtml(item.reps)}</div>
+        <div class="session-item-name">${escapeHtml(disp.name)}</div>
+        ${disp.swapped ? `<div class="swap-label">Switched from: ${escapeHtml(disp.originalName)}</div>` : ''}
+        <div class="session-item-meta">${totalSets} sets × ${escapeHtml(ex.reps)}</div>
       </div>
-      <button class="play-icon-btn" data-video-key="${key}" data-search-term="${escapeHtml(item.video_search_term || item.name)}" ${(cachedVideoId || loadingVideo) ? 'disabled' : ''} title="Watch demo">${loadingVideo ? '⏳' : '▶️'}</button>
+      <button class="play-icon-btn" data-video-key="${vKey}" data-search-term="${escapeHtml(disp.searchTerm)}" ${(cachedVideoId || loadingVideo) ? 'disabled' : ''} title="Watch demo">${loadingVideo ? '⏳' : '▶️'}</button>
       <div class="expand-caret" data-expand-key="${key}">${expanded ? '▲' : '▼'}</div>
     </div>
     ${videoAreaHtml ? `<div class="video-area">${videoAreaHtml}</div>` : ''}
     ${detailHtml}
-    <div class="session-item-controls">
-      <button class="btn-done" data-done-index="${idx}">✓ Done</button>
-      <button class="btn-skip" data-skip-index="${idx}">Skip</button>
-    </div>`;
+    ${renderSetFlow(ex, key, idx, totalSets)}
+    <button class="skip-exercise-link" data-skip-exercise="${idx}">Skip Exercise</button>`;
 }
 
 function renderSessionItem(entry, idx, status, dIdx) {
-  const { type, item } = entry;
   const key = sequenceItemKey(dIdx, entry);
-  const badge = type === 'warmup' ? '🔥' : type === 'cooldown' ? '🧊' : '💪';
+  const badge = entry.type === 'warmup' ? '🔥' : entry.type === 'cooldown' ? '🧊' : '💪';
 
   let inner;
   if (status === 'completed' || status === 'locked') {
-    inner = renderSessionStaticItem(item, status, badge);
-  } else if (type === 'exercise') {
-    inner = renderSessionExerciseCurrent(item, key, idx);
+    inner = renderSessionStaticItem(entry, key, status, badge);
+  } else if (entry.type === 'exercise') {
+    inner = renderSessionExerciseCurrent(entry, key, idx);
   } else {
-    inner = renderSessionTimerCurrent(item, key, idx, badge);
+    inner = renderSessionTimerCurrent(entry, key, idx, badge);
   }
 
   return `<div class="session-item session-item-${status}">${inner}</div>`;
@@ -460,6 +778,17 @@ function renderSession() {
   const total = sequence.length;
   let currentIndex = 0;
   while (currentIndex < total && STATE.sequenceProgress[currentIndex]) currentIndex++;
+
+  // Keep setFlow in sync with whichever exercise is current
+  if (currentIndex < total) {
+    const currentEntry = sequence[currentIndex];
+    if (currentEntry.type === 'exercise') {
+      const currentKey = sequenceItemKey(dIdx, currentEntry);
+      if (!STATE.setFlow || STATE.setFlow.key !== currentKey) STATE.setFlow = { key: currentKey, setIndex: 0 };
+    } else if (STATE.setFlow) {
+      STATE.setFlow = null;
+    }
+  }
 
   const itemsHtml = sequence.map((entry, idx) => {
     const status = idx < currentIndex ? 'completed' : idx === currentIndex ? 'current' : 'locked';
@@ -483,14 +812,27 @@ function renderSession() {
     </div>`;
 }
 
+// ---------- Summary screen ----------
+
 function renderSummary() {
   if (!STATE.plan || !STATE.plan.week) return renderGoal();
   const dIdx = getActiveDayIndex();
   const day = STATE.plan.week[dIdx];
   if (!day) { STATE.screen = 'home'; return renderHome(); }
 
+  const cal = computeDayCalories();
+  const weightNote = cal.usedDefaultWeight ? ` · assumed ${DEFAULT_WEIGHT_KG} kg — restart onboarding to set your weight` : '';
+
+  const mealChips = ['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((m) =>
+    `<button class="meal-chip ${STATE.nextMeal === m ? 'selected' : ''}" data-meal="${m}">${m}</button>`).join('');
+
   const meals = (day.meal_suggestions || []).map((m) => `<li>${escapeHtml(m)}</li>`).join('');
   const cravings = (day.craving_alternatives || []).map((c) => `<li>${escapeHtml(c)}</li>`).join('');
+
+  const mealSectionHtml = STATE.nextMeal
+    ? `<div class="phase-label" style="margin-top:14px;">🍽 ${escapeHtml(STATE.nextMeal)} ideas</div>
+       <ul class="summary-list">${meals}</ul>`
+    : '';
 
   return `
     <div class="screen active">
@@ -500,15 +842,33 @@ function renderSummary() {
       </div>
       <div class="progress-card">
         <div class="progress-card-title">Estimated Calories Burned</div>
-        <div class="progress-card-value" style="margin-top:6px;">~${escapeHtml(day.calorie_estimate)}</div>
-        <div class="progress-card-sub">This is a rough estimate, not precise tracking.</div>
+        <div class="progress-card-value" style="margin-top:6px;">~${cal.kcal} kcal</div>
+        <div class="progress-card-sub">Estimated from your ${cal.activeMinutes} active minutes${weightNote}. A rough estimate, not precise tracking.</div>
       </div>
-      <div class="phase-label" style="margin-top:18px;">🍽 Post-Workout Meal Ideas</div>
-      <ul class="summary-list">${meals}</ul>
+      <div class="phase-label" style="margin-top:18px;">What's your next meal?</div>
+      <div class="meal-chips">${mealChips}</div>
+      ${mealSectionHtml}
       <div class="phase-label" style="margin-top:18px;">🍫 Craving Swaps</div>
       <ul class="summary-list">${cravings}</ul>
       <button class="btn-primary" id="markDayCompleteBtn" style="margin-top:24px;">Mark Day Complete &amp; Continue</button>
     </div>`;
+}
+
+// ---------- Listeners ----------
+
+function resetDayScopedState() {
+  stopActiveTimer();
+  STATE.sequenceProgress = {};
+  STATE.workLog = {};
+  STATE.setFlow = null;
+  STATE.swaps = {};
+  STATE.nextMeal = null;
+  STATE.expanded = {};
+  STATE.videoCache = {};
+  STATE.videoLoading = {};
+  STATE.videoError = {};
+  localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
+  persistWorkLog();
 }
 
 function attachListeners() {
@@ -537,7 +897,16 @@ function attachListeners() {
   if (continueBtn) continueBtn.addEventListener('click', () => {
     if (STATE.screen === 'experience') STATE.screen = 'days';
     else if (STATE.screen === 'days') STATE.screen = 'goal';
+    else if (STATE.screen === 'goal') STATE.screen = 'weight';
     render();
+  });
+
+  const weightInput = document.getElementById('weightInput');
+  if (weightInput) weightInput.addEventListener('input', () => {
+    STATE.onboarding.weight = weightInput.value;
+    localStorage.setItem(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+    const btn = document.getElementById('generatePlanBtn');
+    if (btn) btn.disabled = !isValidWeight(weightInput.value);
   });
 
   const generateBtn = document.getElementById('generatePlanBtn');
@@ -551,6 +920,7 @@ function attachListeners() {
 
   const backToHomeBtn = document.getElementById('backToHomeBtn');
   if (backToHomeBtn) backToHomeBtn.addEventListener('click', () => {
+    stopActiveTimer();
     STATE.screen = 'home';
     render();
   });
@@ -559,20 +929,15 @@ function attachListeners() {
   if (finishDayBtn) finishDayBtn.addEventListener('click', () => {
     STATE.screen = 'summary';
     render();
+    fireConfetti(true);
   });
 
   const markDayCompleteBtn = document.getElementById('markDayCompleteBtn');
   if (markDayCompleteBtn) markDayCompleteBtn.addEventListener('click', () => {
     const dIdx = getActiveDayIndex();
-    clearAllTimers();
     STATE.dayProgress[dIdx] = true;
-    STATE.sequenceProgress = {};
-    STATE.expanded = {};
-    STATE.videoCache = {};
-    STATE.videoLoading = {};
-    STATE.videoError = {};
     localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
-    localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
+    resetDayScopedState();
     bumpStreakIfNeeded();
     STATE.screen = 'home';
     render();
@@ -612,86 +977,65 @@ function attachListeners() {
     });
   });
 
-  document.querySelectorAll('.btn-timer-start[data-timer-key]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.timerKey;
-      const totalSeconds = parseInt(btn.dataset.timerSeconds, 10);
-      if (!totalSeconds || STATE.timers[key]) return;
-      const timer = { remaining: totalSeconds, total: totalSeconds, done: false, intervalId: null };
-      if (btn.dataset.sequenceIndex !== undefined) timer.sequenceIndex = parseInt(btn.dataset.sequenceIndex, 10);
-      STATE.timers[key] = timer;
-      timer.intervalId = setInterval(() => tickTimer(key), 1000);
+  document.querySelectorAll('[data-phase-start]').forEach((btn) => {
+    btn.addEventListener('click', () => startPhaseTimerFor(parseInt(btn.dataset.phaseStart, 10)));
+  });
+
+  document.querySelectorAll('[data-start-set]').forEach((btn) => {
+    btn.addEventListener('click', () => startSetTimerFor(parseInt(btn.dataset.startSet, 10)));
+  });
+
+  document.querySelectorAll('[data-pause-toggle]').forEach((btn) => {
+    btn.addEventListener('click', () => togglePauseActiveTimer());
+  });
+
+  document.querySelectorAll('[data-skip-set]').forEach((btn) => {
+    btn.addEventListener('click', () => skipCurrentSet());
+  });
+
+  document.querySelectorAll('[data-skip-rest]').forEach((btn) => {
+    btn.addEventListener('click', () => skipRest());
+  });
+
+  document.querySelectorAll('[data-skip-exercise]').forEach((btn) => {
+    btn.addEventListener('click', () => skipSequenceItem(parseInt(btn.dataset.skipExercise, 10)));
+  });
+
+  document.querySelectorAll('.btn-skip[data-skip-index]').forEach((btn) => {
+    btn.addEventListener('click', () => skipSequenceItem(parseInt(btn.dataset.skipIndex, 10)));
+  });
+
+  document.querySelectorAll('[data-swap-key]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const key = btn.dataset.swapKey;
+      STATE.swaps[key] = !STATE.swaps[key];
       render();
     });
   });
 
-  document.querySelectorAll('.btn-skip[data-skip-index]').forEach((btn) => {
+  document.querySelectorAll('.meal-chip[data-meal]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.skipIndex, 10);
-      Object.values(STATE.timers).forEach((t) => {
-        if (t.sequenceIndex === idx && t.intervalId) { clearInterval(t.intervalId); t.intervalId = null; }
-      });
-      advanceSequence(idx);
-    });
-  });
-
-  document.querySelectorAll('.btn-done[data-done-index]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.doneIndex, 10);
-      advanceSequence(idx);
+      STATE.nextMeal = btn.dataset.meal;
+      render();
     });
   });
 
   const restartBtn = document.getElementById('restartBtn');
   if (restartBtn) restartBtn.addEventListener('click', () => {
     if (!confirm('This clears your current plan and progress. Continue?')) return;
-    clearAllTimers();
+    resetDayScopedState();
     localStorage.removeItem(STORAGE_KEYS.plan);
     localStorage.removeItem(STORAGE_KEYS.dayProgress);
     localStorage.removeItem(STORAGE_KEYS.sequenceProgress);
+    localStorage.removeItem(STORAGE_KEYS.workLog);
     localStorage.removeItem(STORAGE_KEYS.onboarding);
     STATE.plan = null;
     STATE.dayProgress = {};
-    STATE.sequenceProgress = {};
-    STATE.expanded = {};
-    STATE.videoCache = {};
-    STATE.videoLoading = {};
-    STATE.videoError = {};
-    STATE.onboarding = { experience_level: null, days_available: null, goal: null, injuries: '' };
+    STATE.onboarding = { experience_level: null, days_available: null, goal: null, injuries: '', weight: null };
     STATE.screen = 'experience';
     render();
   });
-}
-
-function advanceSequence(index) {
-  STATE.sequenceProgress[index] = true;
-  localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
-  render();
-}
-
-function tickTimer(key) {
-  const timer = STATE.timers[key];
-  if (!timer) return;
-  timer.remaining -= 1;
-  if (timer.remaining <= 0) {
-    timer.remaining = 0;
-    timer.done = true;
-    clearInterval(timer.intervalId);
-    timer.intervalId = null;
-    if (timer.sequenceIndex !== undefined) {
-      advanceSequence(timer.sequenceIndex);
-    } else {
-      render();
-    }
-  } else {
-    const el = document.getElementById(`timer-${key}`);
-    if (el) el.textContent = formatTime(timer.remaining);
-  }
-}
-
-function clearAllTimers() {
-  Object.values(STATE.timers).forEach((t) => { if (t.intervalId) clearInterval(t.intervalId); });
-  STATE.timers = {};
 }
 
 async function generatePlan() {
@@ -709,15 +1053,14 @@ async function generatePlan() {
     if (!response.ok) throw new Error(data.error || 'Failed to generate plan');
     STATE.plan = data;
     STATE.dayProgress = {};
-    STATE.sequenceProgress = {};
     localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(data));
     localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
-    localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
+    resetDayScopedState();
     STATE.screen = 'home';
     render();
   } catch (err) {
     STATE.error = "Couldn't generate your plan: " + err.message + '. Please try again.';
-    STATE.screen = 'goal';
+    STATE.screen = 'weight';
     render();
   }
 }
