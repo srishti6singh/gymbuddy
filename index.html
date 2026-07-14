@@ -22,6 +22,7 @@
     --radius-md: 14px;
     --radius-sm: 10px;
     --tap-target-min: 56px;
+    --tap-target-sm: 48px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
@@ -100,23 +101,41 @@
 
   .phase-label { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; }
 
-  .btn-timer-start { min-height: 32px; background: none; border: 1.5px solid var(--accent-primary); color: var(--accent-primary); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 12px; flex-shrink: 0; white-space: nowrap; }
+  .btn-timer-start { min-height: var(--tap-target-sm); background: none; border: 1.5px solid var(--accent-primary); color: var(--accent-primary); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 14px; flex-shrink: 0; white-space: nowrap; }
   .timer-display { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 800; color: var(--accent-primary); flex-shrink: 0; min-width: 46px; text-align: right; }
 
   .exercise-tap-area { flex: 1; min-width: 0; cursor: pointer; }
-  .play-icon-btn {
-    width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--accent-primary);
-    background: rgba(57,255,20,0.08); color: var(--accent-primary); font-size: 13px;
-    display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; padding: 0;
+  .btn-video-pill {
+    min-height: var(--tap-target-sm); background: rgba(57,255,20,0.08); border: 1.5px solid var(--accent-primary);
+    color: var(--accent-primary); border-radius: 999px; font-size: 12px; font-weight: 700;
+    cursor: pointer; padding: 0 14px; flex-shrink: 0; white-space: nowrap;
   }
-  .play-icon-btn:disabled { opacity: 0.4; cursor: default; }
-  .expand-caret { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; cursor: pointer; padding: 4px; }
-  .video-area { padding: 0 0 4px 32px; margin-top: 2px; }
+  .btn-video-pill:disabled { opacity: 0.4; cursor: default; }
+  .video-area { padding: 0 0 4px 30px; margin-top: 2px; }
   .video-embed { width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-sm); margin-top: 6px; border: none; display: block; }
   .video-loading { font-size: 12px; color: var(--text-secondary); padding: 4px 0; }
   .video-error { font-size: 11px; color: #FF8080; margin-top: 6px; }
 
+  .seg-toggle { display: flex; border: 1.5px solid #333; border-radius: 12px; overflow: hidden; flex-shrink: 0; }
+  .seg-btn {
+    min-height: var(--tap-target-sm); background: none; border: none; color: var(--text-secondary);
+    font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; padding: 0 10px; cursor: pointer;
+  }
+  .seg-btn.active { background: rgba(57,255,20,0.12); color: var(--accent-primary); }
+
+  .coach-avatar-wrap { text-align: center; padding: 10px 0 2px; }
+  .coach-avatar { font-size: 64px; display: inline-block; line-height: 1; }
+  .coach-avatar.idle-bounce { animation: coachBounce 1.6s ease-in-out infinite; }
+  .coach-avatar.pulse { animation: repPulse 0.4s ease; }
+  @keyframes coachBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .coach-avatar-label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
   .session-progress-label { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+  .session-phase-header {
+    font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-secondary);
+    margin: 18px 0 2px; padding-bottom: 6px; border-bottom: 1px solid #2A2A2A;
+  }
   .session-item { background: var(--bg-surface); border-radius: 12px; padding: 12px 14px; margin-top: 10px; transition: opacity 0.2s ease; }
   .session-item-completed { opacity: 0.45; }
   .session-item-locked { opacity: 0.35; }
@@ -129,28 +148,35 @@
   .session-status-icon.locked { color: var(--text-secondary); }
   .session-item-instructions { font-size: 12px; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; padding-left: 30px; }
   .session-item-controls { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-left: 30px; flex-wrap: wrap; }
-  .btn-skip { min-height: 36px; background: none; border: 1.5px solid #444; color: var(--text-secondary); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 14px; }
-  .btn-done { min-height: 36px; background: var(--accent-primary); color: #0A1A05; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0 16px; }
+  .btn-skip { min-height: var(--tap-target-sm); background: none; border: 1.5px solid #444; color: var(--text-secondary); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 14px; }
+  .btn-done { min-height: var(--tap-target-sm); background: var(--accent-primary); color: #0A1A05; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0 16px; }
 
   .set-label { font-size: 13px; font-weight: 700; }
   .rep-counter-wrap { text-align: center; padding: 12px 0 4px; }
   .rep-number { font-family: 'Sora', sans-serif; font-size: 64px; font-weight: 800; color: var(--accent-primary); line-height: 1; display: inline-block; }
   .rep-number.pulse { animation: repPulse 0.4s ease; }
   @keyframes repPulse { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
-  .skip-exercise-link { background: none; border: none; color: var(--text-secondary); font-size: 12px; text-decoration: underline; cursor: pointer; margin-top: 10px; padding: 4px 0 0 30px; display: block; }
-  .alt-swap-btn { background: none; border: 1.5px solid var(--accent-warn); color: var(--accent-warn); border-radius: 8px; font-size: 12px; font-weight: 600; padding: 6px 10px; margin: 8px 0 0 30px; cursor: pointer; display: inline-block; }
+  .skip-exercise-link {
+    background: none; border: none; color: var(--text-secondary); font-size: 12px; text-decoration: underline;
+    cursor: pointer; margin-top: 6px; padding-left: 30px; min-height: var(--tap-target-sm);
+    display: flex; align-items: center;
+  }
+  .alt-swap-btn {
+    min-height: var(--tap-target-sm); background: none; border: 1.5px solid var(--accent-warn); color: var(--accent-warn);
+    border-radius: 8px; font-size: 12px; font-weight: 600; padding: 0 12px; margin: 8px 0 0 30px; cursor: pointer; display: inline-flex; align-items: center;
+  }
   .swap-label { font-size: 11px; color: var(--accent-warn); margin-top: 2px; }
 
   .meal-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
   .meal-chip {
-    flex: 1 1 40%; min-height: 44px; background: var(--bg-surface); border: 2px solid #2E2E2E;
+    flex: 1 1 40%; min-height: var(--tap-target-sm); background: var(--bg-surface); border: 2px solid #2E2E2E;
     border-radius: var(--radius-sm); color: var(--text-primary); font-size: 14px; font-weight: 600;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
   .meal-chip.selected { border-color: var(--accent-primary); background: rgba(57,255,20,0.08); color: var(--accent-primary); }
 
   .summary-list { list-style: none; margin-top: 8px; }
-  .summary-list li { font-size: 13px; color: var(--text-primary); background: var(--bg-surface); padding: 10px 12px; border-radius: 8px; margin-top: 6px; }
+  .summary-list li { font-size: 13px; color: var(--text-primary); background: var(--bg-surface); padding: 12px; border-radius: 8px; margin-top: 6px; }
 
   .weight-input-wrap { display: flex; align-items: center; gap: 12px; margin-top: 24px; }
   .weight-input {
@@ -158,19 +184,33 @@
     padding: 0 16px; color: white; font-size: 18px; width: 100%; font-family: 'Inter', sans-serif;
   }
   .weight-unit { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-secondary); }
+  .injuries-input {
+    min-height: 110px; background: var(--bg-surface); border: 2px solid #2E2E2E; border-radius: 14px;
+    padding: 14px 16px; color: white; font-size: 15px; width: 100%; font-family: 'Inter', sans-serif;
+    resize: none; margin-top: 20px; line-height: 1.5;
+  }
+
+  .sheet-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.65); display: flex; align-items: flex-end; z-index: 50; }
+  .bottom-sheet {
+    width: 100%; background: var(--bg-surface-raised); border-radius: 20px 20px 0 0;
+    padding: 22px 20px 24px; animation: sheetUp 0.3s cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
   .loading-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
   .spinner { width: 36px; height: 36px; border: 3px solid #2A2A2A; border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .error-box { background: rgba(255,80,80,0.1); border: 1px solid #663333; color: #FF8080; padding: 12px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
 
-  .btn-ghost { min-height: 44px; background: none; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; width: 100%; margin-top: 10px; }
+  .btn-ghost { min-height: var(--tap-target-sm); background: none; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; width: 100%; margin-top: 10px; }
 </style>
 </head>
 <body>
 <div class="phone-frame" id="phoneFrame"></div>
 
 <script>
+const PLAN_SCHEMA_VERSION = 2;
+
 const STORAGE_KEYS = {
   name: 'gymbuddy_name',
   streak: 'gymbuddy_streak',
@@ -180,6 +220,7 @@ const STORAGE_KEYS = {
   dayProgress: 'gymbuddy_day_progress',
   sequenceProgress: 'gymbuddy_sequence_progress',
   workLog: 'gymbuddy_work_log',
+  lastDaySummary: 'gymbuddy_last_day_summary',
 };
 
 const REST_SECONDS = 45;      // rest between sets (NASM: 30-60s for bodyweight work)
@@ -196,6 +237,7 @@ const STATE = {
   dayProgress: JSON.parse(localStorage.getItem(STORAGE_KEYS.dayProgress) || '{}'),
   sequenceProgress: JSON.parse(localStorage.getItem(STORAGE_KEYS.sequenceProgress) || '{}'),
   workLog: JSON.parse(localStorage.getItem(STORAGE_KEYS.workLog) || '{}'),
+  lastDaySummary: JSON.parse(localStorage.getItem(STORAGE_KEYS.lastDaySummary) || 'null'),
   streak: parseInt(localStorage.getItem(STORAGE_KEYS.streak) || '0', 10),
   loading: false,
   error: null,
@@ -207,7 +249,24 @@ const STATE = {
   setFlow: null,
   swaps: {},
   nextMeal: null,
+  mediaMode: 'video',
 };
+
+// A stored plan is usable only if it carries the current schema version and
+// every day has the fields the session/summary screens depend on.
+function isPlanValid(plan) {
+  if (!plan || plan.schema_version !== PLAN_SCHEMA_VERSION) return false;
+  if (!Array.isArray(plan.week) || plan.week.length === 0) return false;
+  return plan.week.every(
+    (day) =>
+      day &&
+      Array.isArray(day.warmup) && day.warmup.length > 0 &&
+      Array.isArray(day.exercises) && day.exercises.length > 0 &&
+      Array.isArray(day.cooldown) && day.cooldown.length > 0 &&
+      Array.isArray(day.meal_suggestions) && day.meal_suggestions.length > 0 &&
+      Array.isArray(day.craving_alternatives) && day.craving_alternatives.length > 0
+  );
+}
 
 function escapeHtml(value) {
   if (value === null || value === undefined) return '';
@@ -252,6 +311,14 @@ function parseReps(reps) {
   const numMatch = str.match(/(\d+)/);
   if (numMatch) return { type: 'count', value: parseInt(numMatch[1], 10) };
   return { type: 'count', value: 10 };
+}
+
+function focusIcon(focus) {
+  const f = String(focus || '').toLowerCase();
+  if (/leg|lower|glute|quad|calf/.test(f)) return '🦵';
+  if (/push|pull|arm|upper|chest|back|shoulder|bicep|tricep/.test(f)) return '💪';
+  if (/core|ab/.test(f)) return '🎯';
+  return '🏋️';
 }
 
 function getActiveDayIndex() {
@@ -328,6 +395,13 @@ function tick() {
       el.classList.remove('pulse');
       void el.offsetWidth;
       el.classList.add('pulse');
+      // Coach avatar "counts with you" — pulse in sync with each rep
+      const avatarEl = document.getElementById('coachAvatar');
+      if (avatarEl) {
+        avatarEl.classList.remove('pulse');
+        void avatarEl.offsetWidth;
+        avatarEl.classList.add('pulse');
+      }
     }
   } else {
     const el = document.getElementById('activeCountdown');
@@ -475,8 +549,30 @@ function fireConfetti(big) {
   }
 }
 
-// If a plan already exists from a previous visit, skip straight to home
-if (STATE.plan && STATE.name) STATE.screen = 'home';
+// Called by Mark Day Complete: snapshot the day's stats BEFORE resetting per-day state,
+// so the next Home visit can show the "Yesterday: ..." preview.
+function completeActiveDay() {
+  const dIdx = getActiveDayIndex();
+  const summary = computeDayCalories();
+  STATE.lastDaySummary = { dayIndex: dIdx, kcal: summary.kcal, activeMinutes: summary.activeMinutes, previewDismissed: false };
+  localStorage.setItem(STORAGE_KEYS.lastDaySummary, JSON.stringify(STATE.lastDaySummary));
+  STATE.dayProgress[dIdx] = true;
+  localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
+  resetDayScopedState();
+  bumpStreakIfNeeded();
+  STATE.screen = 'home';
+  render();
+}
+
+function dismissDayPreview() {
+  if (!STATE.lastDaySummary) return;
+  STATE.lastDaySummary.previewDismissed = true;
+  localStorage.setItem(STORAGE_KEYS.lastDaySummary, JSON.stringify(STATE.lastDaySummary));
+}
+
+// If a plan already exists from a previous visit, go home — unless it predates the
+// current schema, in which case route to the friendly regenerate screen.
+if (STATE.plan && STATE.name) STATE.screen = isPlanValid(STATE.plan) ? 'home' : 'planRefresh';
 
 function render() {
   const frame = document.getElementById('phoneFrame');
@@ -485,7 +581,9 @@ function render() {
   else if (STATE.screen === 'days') frame.innerHTML = renderDays();
   else if (STATE.screen === 'goal') frame.innerHTML = renderGoal();
   else if (STATE.screen === 'weight') frame.innerHTML = renderWeight();
+  else if (STATE.screen === 'injuries') frame.innerHTML = renderInjuries();
   else if (STATE.screen === 'loading') frame.innerHTML = renderLoading();
+  else if (STATE.screen === 'planRefresh') frame.innerHTML = renderPlanRefresh();
   else if (STATE.screen === 'home') frame.innerHTML = renderHome();
   else if (STATE.screen === 'session') frame.innerHTML = renderSession();
   else if (STATE.screen === 'summary') frame.innerHTML = renderSummary();
@@ -493,7 +591,7 @@ function render() {
 }
 
 function renderDots(done) {
-  return `<div class="progress-dots">${[1, 2, 3, 4].map((i) => `<span class="${i <= done ? 'done' : ''}"></span>`).join('')}</div>`;
+  return `<div class="progress-dots">${[1, 2, 3, 4, 5].map((i) => `<span class="${i <= done ? 'done' : ''}"></span>`).join('')}</div>`;
 }
 
 function renderProfile() {
@@ -576,7 +674,19 @@ function renderWeight() {
         <input id="weightInput" class="weight-input" type="number" inputmode="decimal" min="20" max="300" step="0.5" placeholder="e.g. 65" value="${escapeHtml(weight)}" />
         <span class="weight-unit">kg</span>
       </div>
-      <button class="btn-primary" id="generatePlanBtn" style="margin-top:20px;" ${isValidWeight(weight)?'':'disabled'}>Generate My Week</button>
+      <button class="btn-primary" id="continueBtn" style="margin-top:20px;" ${isValidWeight(weight)?'':'disabled'}>Continue</button>
+    </div>`;
+}
+
+function renderInjuries() {
+  const injuries = STATE.onboarding.injuries || '';
+  return `
+    <div class="screen active">
+      ${renderDots(5)}
+      <h2>Any injuries or areas we should be careful with?</h2>
+      <p class="text-secondary" style="margin-top:8px;">Optional — we'll avoid movements that could aggravate them.</p>
+      <textarea id="injuriesInput" class="injuries-input" placeholder="e.g. knee pain, lower back — or leave blank">${escapeHtml(injuries)}</textarea>
+      <button class="btn-primary" id="generatePlanBtn" style="margin-top:20px;">Generate My Week</button>
       ${STATE.error ? `<div class="error-box">${escapeHtml(STATE.error)}</div>` : ''}
     </div>`;
 }
@@ -590,8 +700,21 @@ function renderLoading() {
     </div>`;
 }
 
+function renderPlanRefresh() {
+  return `
+    <div class="screen active" style="justify-content:center; text-align:center;">
+      <div style="font-size:48px;">🔄</div>
+      <h1 style="margin-top:12px;">Your plan needs a refresh</h1>
+      <p class="text-secondary" style="margin-top:10px;">We've upgraded GymBuddy with guided sets, timers, and meal ideas. Your saved plan is from an older version — regenerate it to get the latest features. Your answers are saved.</p>
+      <button class="btn-primary" id="regeneratePlanBtn" style="margin-top:22px;">Regenerate My Plan</button>
+      <button class="btn-ghost" id="restartBtn">Start over with new answers</button>
+      ${STATE.error ? `<div class="error-box">${escapeHtml(STATE.error)}</div>` : ''}
+    </div>`;
+}
+
 function renderHome() {
-  if (!STATE.plan || !STATE.plan.week) return renderGoal();
+  if (!STATE.plan) return renderGoal();
+  if (!isPlanValid(STATE.plan)) return renderPlanRefresh();
   const week = STATE.plan.week;
   const dIdx = getActiveDayIndex();
 
@@ -611,6 +734,18 @@ function renderHome() {
   const exerciseCount = (day.exercises || []).length;
   const cooldownCount = (day.cooldown || []).length;
 
+  let previewSheetHtml = '';
+  if (dIdx > 0 && STATE.lastDaySummary && STATE.lastDaySummary.dayIndex === dIdx - 1 && !STATE.lastDaySummary.previewDismissed) {
+    previewSheetHtml = `
+      <div class="sheet-backdrop" id="previewBackdrop">
+        <div class="bottom-sheet">
+          <div class="set-label" style="font-size:15px;">Yesterday: ${STATE.lastDaySummary.activeMinutes} active min, ~${STATE.lastDaySummary.kcal} kcal ✅</div>
+          <p class="text-secondary" style="margin-top:8px;">Today: ${escapeHtml(day.focus)}, ${exerciseCount} exercises. Let's go!</p>
+          <button class="btn-primary" id="previewStartBtn" style="margin-top:16px;">Start Day</button>
+        </div>
+      </div>`;
+  }
+
   return `
     <div class="screen active">
       <div class="eyebrow">Today</div>
@@ -622,6 +757,7 @@ function renderHome() {
         <button class="btn-primary" id="startDayBtn">Start Day</button>
       </div>
       <button class="btn-ghost" id="restartBtn">Start over with new answers</button>
+      ${previewSheetHtml}
     </div>`;
 }
 
@@ -721,14 +857,28 @@ function renderSessionExerciseCurrent(entry, key, idx) {
   const loadingVideo = !!STATE.videoLoading[vKey];
   const videoError = STATE.videoError[vKey];
   const totalSets = parseInt(ex.sets, 10) || 1;
+  const t = STATE.activeTimer;
+  const repsRunning = t && t.key === key && t.kind === 'reps' && t.mode === 'reps' && !t.paused;
 
-  let videoAreaHtml = '';
-  if (cachedVideoId) {
-    videoAreaHtml = `<iframe class="video-embed" src="https://www.youtube.com/embed/${escapeHtml(cachedVideoId)}" title="${escapeHtml(disp.name)} demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-  } else if (loadingVideo) {
-    videoAreaHtml = `<div class="video-loading">Loading demo…</div>`;
-  } else if (videoError) {
-    videoAreaHtml = `<div class="video-error">${escapeHtml(videoError)}</div>`;
+  let mediaHtml = '';
+  let videoButtonHtml = '';
+  if (STATE.mediaMode === 'avatar') {
+    mediaHtml = `
+      <div class="coach-avatar-wrap">
+        <div class="coach-avatar ${repsRunning ? '' : 'idle-bounce'}" id="coachAvatar">🏋️</div>
+        <div class="coach-avatar-label">Coach Avatar (preview)</div>
+      </div>`;
+  } else {
+    let videoAreaHtml = '';
+    if (cachedVideoId) {
+      videoAreaHtml = `<iframe class="video-embed" src="https://www.youtube.com/embed/${escapeHtml(cachedVideoId)}" title="${escapeHtml(disp.name)} demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    } else if (loadingVideo) {
+      videoAreaHtml = `<div class="video-loading">Loading demo…</div>`;
+    } else if (videoError) {
+      videoAreaHtml = `<div class="video-error">${escapeHtml(videoError)}</div>`;
+    }
+    mediaHtml = videoAreaHtml ? `<div class="video-area">${videoAreaHtml}</div>` : '';
+    videoButtonHtml = `<button class="btn-video-pill" data-video-key="${vKey}" data-search-term="${escapeHtml(disp.searchTerm)}" ${(cachedVideoId || loadingVideo) ? 'disabled' : ''}>${loadingVideo ? '⏳ Loading…' : '▶ Demo Video'}</button>`;
   }
 
   const detailHtml = expanded ? `
@@ -741,12 +891,11 @@ function renderSessionExerciseCurrent(entry, key, idx) {
       <div class="exercise-tap-area" data-expand-key="${key}">
         <div class="session-item-name">${escapeHtml(disp.name)}</div>
         ${disp.swapped ? `<div class="swap-label">Switched from: ${escapeHtml(disp.originalName)}</div>` : ''}
-        <div class="session-item-meta">${totalSets} sets × ${escapeHtml(ex.reps)}</div>
+        <div class="session-item-meta">${totalSets} sets × ${escapeHtml(ex.reps)} · tap for details</div>
       </div>
-      <button class="play-icon-btn" data-video-key="${vKey}" data-search-term="${escapeHtml(disp.searchTerm)}" ${(cachedVideoId || loadingVideo) ? 'disabled' : ''} title="Watch demo">${loadingVideo ? '⏳' : '▶️'}</button>
-      <div class="expand-caret" data-expand-key="${key}">${expanded ? '▲' : '▼'}</div>
+      ${videoButtonHtml}
     </div>
-    ${videoAreaHtml ? `<div class="video-area">${videoAreaHtml}</div>` : ''}
+    ${mediaHtml}
     ${detailHtml}
     ${renderSetFlow(ex, key, idx, totalSets)}
     <button class="skip-exercise-link" data-skip-exercise="${idx}">Skip Exercise</button>`;
@@ -754,7 +903,7 @@ function renderSessionExerciseCurrent(entry, key, idx) {
 
 function renderSessionItem(entry, idx, status, dIdx) {
   const key = sequenceItemKey(dIdx, entry);
-  const badge = entry.type === 'warmup' ? '🔥' : entry.type === 'cooldown' ? '🧊' : '💪';
+  const badge = entry.type === 'warmup' ? '🔥' : entry.type === 'cooldown' ? '🧘' : '💪';
 
   let inner;
   if (status === 'completed' || status === 'locked') {
@@ -768,8 +917,15 @@ function renderSessionItem(entry, idx, status, dIdx) {
   return `<div class="session-item session-item-${status}">${inner}</div>`;
 }
 
+function phaseHeaderLabel(type) {
+  if (type === 'warmup') return '🔥 Warm-up';
+  if (type === 'exercise') return '💪 Main Workout';
+  return '🧘 Cool-down';
+}
+
 function renderSession() {
-  if (!STATE.plan || !STATE.plan.week) return renderGoal();
+  if (!STATE.plan) return renderGoal();
+  if (!isPlanValid(STATE.plan)) return renderPlanRefresh();
   const dIdx = getActiveDayIndex();
   const day = STATE.plan.week[dIdx];
   if (!day) { STATE.screen = 'home'; return renderHome(); }
@@ -790,9 +946,15 @@ function renderSession() {
     }
   }
 
+  let prevType = null;
   const itemsHtml = sequence.map((entry, idx) => {
+    let header = '';
+    if (entry.type !== prevType) {
+      prevType = entry.type;
+      header = `<div class="session-phase-header">${phaseHeaderLabel(entry.type)}</div>`;
+    }
     const status = idx < currentIndex ? 'completed' : idx === currentIndex ? 'current' : 'locked';
-    return renderSessionItem(entry, idx, status, dIdx);
+    return header + renderSessionItem(entry, idx, status, dIdx);
   }).join('');
 
   const allDone = currentIndex >= total;
@@ -800,8 +962,16 @@ function renderSession() {
 
   return `
     <div class="screen active">
-      <div class="eyebrow">Day ${dIdx + 1} of ${STATE.plan.week.length}</div>
-      <h1 style="font-size:22px;">${escapeHtml(day.focus)}</h1>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div>
+          <div class="eyebrow">Day ${dIdx + 1} of ${STATE.plan.week.length}</div>
+          <h1 style="font-size:22px;">${escapeHtml(day.focus)}</h1>
+        </div>
+        <div class="seg-toggle">
+          <button class="seg-btn ${STATE.mediaMode === 'video' ? 'active' : ''}" data-media-mode="video">Demo Video</button>
+          <button class="seg-btn ${STATE.mediaMode === 'avatar' ? 'active' : ''}" data-media-mode="avatar">Coach Avatar</button>
+        </div>
+      </div>
       <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
       <div class="session-progress-label">${Math.min(currentIndex, total)} of ${total} complete</div>
       <div>
@@ -815,7 +985,8 @@ function renderSession() {
 // ---------- Summary screen ----------
 
 function renderSummary() {
-  if (!STATE.plan || !STATE.plan.week) return renderGoal();
+  if (!STATE.plan) return renderGoal();
+  if (!isPlanValid(STATE.plan)) return renderPlanRefresh();
   const dIdx = getActiveDayIndex();
   const day = STATE.plan.week[dIdx];
   if (!day) { STATE.screen = 'home'; return renderHome(); }
@@ -837,8 +1008,9 @@ function renderSummary() {
   return `
     <div class="screen active">
       <div style="text-align:center;">
-        <div style="font-size:48px;">🎉</div>
-        <h1 style="margin-top:10px;">Day ${dIdx + 1} Complete!</h1>
+        <div style="font-size:56px;">${focusIcon(day.focus)}</div>
+        <h1 style="margin-top:8px;">Day ${dIdx + 1} Complete! 🎉</h1>
+        <div class="text-secondary" style="margin-top:4px;">${escapeHtml(day.focus)}</div>
       </div>
       <div class="progress-card">
         <div class="progress-card-title">Estimated Calories Burned</div>
@@ -898,6 +1070,7 @@ function attachListeners() {
     if (STATE.screen === 'experience') STATE.screen = 'days';
     else if (STATE.screen === 'days') STATE.screen = 'goal';
     else if (STATE.screen === 'goal') STATE.screen = 'weight';
+    else if (STATE.screen === 'weight') STATE.screen = 'injuries';
     render();
   });
 
@@ -905,17 +1078,49 @@ function attachListeners() {
   if (weightInput) weightInput.addEventListener('input', () => {
     STATE.onboarding.weight = weightInput.value;
     localStorage.setItem(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
-    const btn = document.getElementById('generatePlanBtn');
+    const btn = document.getElementById('continueBtn');
     if (btn) btn.disabled = !isValidWeight(weightInput.value);
+  });
+
+  const injuriesInput = document.getElementById('injuriesInput');
+  if (injuriesInput) injuriesInput.addEventListener('input', () => {
+    STATE.onboarding.injuries = injuriesInput.value;
+    localStorage.setItem(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
   });
 
   const generateBtn = document.getElementById('generatePlanBtn');
   if (generateBtn) generateBtn.addEventListener('click', generatePlan);
 
+  const regenerateBtn = document.getElementById('regeneratePlanBtn');
+  if (regenerateBtn) regenerateBtn.addEventListener('click', () => {
+    const o = STATE.onboarding;
+    if (o.experience_level && o.days_available && o.goal) {
+      generatePlan();
+    } else {
+      STATE.screen = 'experience';
+      render();
+    }
+  });
+
   const startDayBtn = document.getElementById('startDayBtn');
   if (startDayBtn) startDayBtn.addEventListener('click', () => {
     STATE.screen = 'session';
     render();
+  });
+
+  const previewStartBtn = document.getElementById('previewStartBtn');
+  if (previewStartBtn) previewStartBtn.addEventListener('click', () => {
+    dismissDayPreview();
+    STATE.screen = 'session';
+    render();
+  });
+
+  const previewBackdrop = document.getElementById('previewBackdrop');
+  if (previewBackdrop) previewBackdrop.addEventListener('click', (e) => {
+    if (e.target === previewBackdrop) {
+      dismissDayPreview();
+      render();
+    }
   });
 
   const backToHomeBtn = document.getElementById('backToHomeBtn');
@@ -933,15 +1138,7 @@ function attachListeners() {
   });
 
   const markDayCompleteBtn = document.getElementById('markDayCompleteBtn');
-  if (markDayCompleteBtn) markDayCompleteBtn.addEventListener('click', () => {
-    const dIdx = getActiveDayIndex();
-    STATE.dayProgress[dIdx] = true;
-    localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
-    resetDayScopedState();
-    bumpStreakIfNeeded();
-    STATE.screen = 'home';
-    render();
-  });
+  if (markDayCompleteBtn) markDayCompleteBtn.addEventListener('click', completeActiveDay);
 
   document.querySelectorAll('[data-expand-key]').forEach((el) => {
     el.addEventListener('click', () => {
@@ -951,7 +1148,14 @@ function attachListeners() {
     });
   });
 
-  document.querySelectorAll('.play-icon-btn[data-video-key]').forEach((btn) => {
+  document.querySelectorAll('[data-media-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      STATE.mediaMode = btn.dataset.mediaMode;
+      render();
+    });
+  });
+
+  document.querySelectorAll('button[data-video-key]').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const key = btn.dataset.videoKey;
@@ -1030,8 +1234,11 @@ function attachListeners() {
     localStorage.removeItem(STORAGE_KEYS.sequenceProgress);
     localStorage.removeItem(STORAGE_KEYS.workLog);
     localStorage.removeItem(STORAGE_KEYS.onboarding);
+    localStorage.removeItem(STORAGE_KEYS.lastDaySummary);
     STATE.plan = null;
     STATE.dayProgress = {};
+    STATE.lastDaySummary = null;
+    STATE.error = null;
     STATE.onboarding = { experience_level: null, days_available: null, goal: null, injuries: '', weight: null };
     STATE.screen = 'experience';
     render();
@@ -1051,16 +1258,19 @@ async function generatePlan() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to generate plan');
-    STATE.plan = data;
+    STATE.plan = { schema_version: PLAN_SCHEMA_VERSION, week: data.week };
     STATE.dayProgress = {};
-    localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(data));
+    STATE.lastDaySummary = null;
+    localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(STATE.plan));
     localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
+    localStorage.removeItem(STORAGE_KEYS.lastDaySummary);
     resetDayScopedState();
     STATE.screen = 'home';
     render();
   } catch (err) {
     STATE.error = "Couldn't generate your plan: " + err.message + '. Please try again.';
-    STATE.screen = 'weight';
+    // Show the error on the screen that has the generate/regenerate button
+    STATE.screen = (STATE.plan && !isPlanValid(STATE.plan)) ? 'planRefresh' : 'injuries';
     render();
   }
 }

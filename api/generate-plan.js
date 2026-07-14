@@ -3,6 +3,22 @@
 // The GEMINI_API_KEY is read from environment variables (set in Vercel dashboard,
 // never committed to the repo, never exposed to the browser).
 
+// A plan is only returned to the client if EVERY day is complete:
+// non-empty warmup/exercises/cooldown, and 2+ meal_suggestions and
+// craving_alternatives. Partial plans are never returned.
+export function validatePlan(parsed) {
+  if (!parsed || !Array.isArray(parsed.week) || parsed.week.length === 0) return false;
+  return parsed.week.every(
+    (day) =>
+      day &&
+      Array.isArray(day.warmup) && day.warmup.length > 0 &&
+      Array.isArray(day.exercises) && day.exercises.length > 0 &&
+      Array.isArray(day.cooldown) && day.cooldown.length > 0 &&
+      Array.isArray(day.meal_suggestions) && day.meal_suggestions.length >= 2 &&
+      Array.isArray(day.craving_alternatives) && day.craving_alternatives.length >= 2
+  );
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -43,65 +59,82 @@ Rules:
 - Output STRICT JSON ONLY. No markdown, no prose, no code fences, no explanations before or after. Keep names and video_search_terms short (under 6 words). Match this exact schema:
 {"week":[{"day":"","focus":"","warmup":[{"name":"","duration":"","instructions":""}],"exercises":[{"name":"","sets":0,"reps":"","instructions":"","alternative":"","video_search_term":""}],"cooldown":[{"name":"","duration":"","instructions":""}],"diet_tip":"","meal_suggestions":["",""],"craving_alternatives":["",""]}]}`;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const requestBody = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 2500,
+      responseMimeType: 'application/json',
+    },
+  });
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2500,
-            responseMimeType: 'application/json',
-          },
-        }),
-        signal: controller.signal,
-      }
-    );
-    clearTimeout(timeoutId);
+  // Up to 2 attempts (1 retry on any failure, including an incomplete plan),
+  // bounded by a total budget that stays inside Vercel's 10s Hobby cap.
+  const startedAt = Date.now();
+  const TOTAL_BUDGET_MS = 9000;
+  let lastFailure = null;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      return res.status(502).json({ error: 'Upstream API error', detail: errText });
-    }
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const remainingMs = TOTAL_BUDGET_MS - (Date.now() - startedAt);
+    if (remainingMs < 1500) break;
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) {
-      return res.status(502).json({ error: 'No text response from model' });
-    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(8000, remainingMs));
 
-    let cleaned = text
-      .trim()
-      .replace(/^```json/, '')
-      .replace(/^```/, '')
-      .replace(/```$/, '')
-      .trim();
-
-    let parsed;
     try {
-      parsed = JSON.parse(cleaned);
-    } catch (parseErr) {
-      return res.status(502).json({ error: 'Plan response was incomplete — please retry' });
-    }
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
 
-    if (!parsed.week || !Array.isArray(parsed.week)) {
-      return res.status(502).json({ error: 'Unexpected plan format from model' });
-    }
+      if (!response.ok) {
+        const errText = await response.text();
+        lastFailure = { status: 502, body: { error: 'Upstream API error', detail: errText } };
+        continue;
+      }
 
-    return res.status(200).json(parsed);
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err.name === 'AbortError') {
-      return res.status(504).json({ error: 'Gemini took too long to respond (>8s) — please try again' });
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        lastFailure = { status: 502, body: { error: 'No text response from model' } };
+        continue;
+      }
+
+      const cleaned = text
+        .trim()
+        .replace(/^```json/, '')
+        .replace(/^```/, '')
+        .replace(/```$/, '')
+        .trim();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (parseErr) {
+        lastFailure = { status: 502, body: { error: 'Plan response was incomplete — please retry' } };
+        continue;
+      }
+
+      if (!validatePlan(parsed)) {
+        lastFailure = { status: 502, body: { error: 'Generated plan was missing required sections — please retry' } };
+        continue;
+      }
+
+      return res.status(200).json(parsed);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        lastFailure = { status: 504, body: { error: 'Gemini took too long to respond — please try again' } };
+      } else {
+        lastFailure = { status: 500, body: { error: 'Server error', detail: err.message } };
+      }
     }
-    return res.status(500).json({ error: 'Server error', detail: err.message });
   }
+
+  const failure = lastFailure || { status: 502, body: { error: 'Plan generation failed — please try again' } };
+  return res.status(failure.status).json(failure.body);
 }
