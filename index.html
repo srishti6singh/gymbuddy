@@ -225,6 +225,8 @@
   @keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
   .loading-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 18px; }
+  .spinner { width: 32px; height: 32px; border: 3px solid #2A2A2A; border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .error-box { background: rgba(255,80,80,0.1); border: 1px solid #663333; color: #FF8080; padding: 12px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
 
   .btn-ghost { min-height: var(--tap-target-sm); background: none; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; width: 100%; margin-top: 10px; }
@@ -891,6 +893,7 @@ function renderLoading() {
         <div class="fact-label">💡 Did you know?</div>
         <div class="fact-text" id="factText">${escapeHtml(FITNESS_FACTS[factIndex])}</div>
       </div>
+      <div class="spinner"></div>
       <div class="text-secondary" style="font-size:13px;">Personalizing based on your answers</div>
     </div>`;
 }
