@@ -92,7 +92,7 @@
   .progress-card-title { font-size: 15px; font-weight: 700; }
   .progress-card-value { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; color: var(--accent-primary); }
   .progress-track { height: 10px; background: #2A2A2A; border-radius: 5px; overflow: hidden; margin-top: 12px; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-primary-dim), var(--accent-primary)); border-radius: 5px; transition: width 0.3s ease; }
+  .progress-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent-primary-dim), var(--accent-primary)); border-radius: 5px; transform-origin: left; transition: transform 0.3s ease; }
   .progress-card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
 
   .day-card { border-left: 4px solid var(--accent-primary); background: var(--bg-surface); border-radius: 12px; padding: 16px; margin-top: 12px; }
@@ -123,11 +123,21 @@
   }
   .seg-btn.active { background: rgba(57,255,20,0.12); color: var(--accent-primary); }
 
+  /* Coach Avatar — pure CSS, two states: exercising (squat bounce synced to rep
+     cadence) and resting (slow breathing). All animation on transform/opacity. */
   .coach-avatar-wrap { text-align: center; padding: 10px 0 2px; }
-  .coach-avatar { font-size: 64px; display: inline-block; line-height: 1; }
-  .coach-avatar.idle-bounce { animation: coachBounce 1.6s ease-in-out infinite; }
-  .coach-avatar.pulse { animation: repPulse 0.4s ease; }
-  @keyframes coachBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .coach-figure { display: inline-flex; align-items: center; gap: 8px; }
+  .coach-emoji { font-size: 64px; line-height: 1; display: inline-block; }
+  .coach-line { width: 18px; height: 3px; border-radius: 2px; background: var(--accent-primary); opacity: 0; }
+  /* 3s = SECONDS_PER_REP, so one dip per counted rep */
+  .coach-figure.exercising .coach-emoji { animation: coachSquat 3s ease-in-out infinite; }
+  .coach-figure.exercising .coach-line { animation: motionLine 3s ease-in-out infinite; }
+  .coach-figure.exercising .coach-line-right { animation-delay: 0.15s; }
+  .coach-figure.resting .coach-emoji { animation: coachBreathe 3.2s ease-in-out infinite; }
+  @keyframes coachSquat { 0%, 100% { transform: translateY(0) scaleY(1); } 40% { transform: translateY(10px) scaleY(0.9); } 60% { transform: translateY(10px) scaleY(0.9); } }
+  @keyframes motionLine { 0%, 100% { opacity: 0; transform: translateY(0); } 40% { opacity: 0.9; transform: translateY(10px); } 60% { opacity: 0.9; transform: translateY(10px); } }
+  @keyframes coachBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .coach-ground { width: 70px; height: 8px; border-radius: 50%; background: rgba(57,255,20,0.15); margin: 2px auto 0; }
   .coach-avatar-label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
 
   .session-progress-label { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
@@ -149,6 +159,7 @@
   .session-item-instructions { font-size: 12px; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; padding-left: 30px; }
   .session-item-controls { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-left: 30px; flex-wrap: wrap; }
   .btn-skip { min-height: var(--tap-target-sm); background: none; border: 1.5px solid #444; color: var(--text-secondary); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 14px; }
+  .btn-skip.active-toggle { border-color: var(--accent-primary); color: var(--accent-primary); }
   .btn-done { min-height: var(--tap-target-sm); background: var(--accent-primary); color: #0A1A05; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0 16px; }
 
   .set-label { font-size: 13px; font-weight: 700; }
@@ -177,6 +188,22 @@
 
   .summary-list { list-style: none; margin-top: 8px; }
   .summary-list li { font-size: 13px; color: var(--text-primary); background: var(--bg-surface); padding: 12px; border-radius: 8px; margin-top: 6px; }
+  .meal-idea-name { font-weight: 700; font-size: 14px; }
+  .meal-idea-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .recipe-steps { margin: 10px 0 0 18px; }
+  .recipe-steps li { background: none; padding: 3px 0; margin: 0; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .ingredient-list { list-style: none; margin-top: 10px; }
+  .ingredient-list li { background: none; padding: 3px 0; margin: 0; font-size: 12px; line-height: 1.5; }
+  .ingredient-alt { color: var(--text-secondary); }
+
+  .fact-card {
+    background: var(--bg-surface); border: 1px solid #2A2A2A; border-radius: var(--radius-md);
+    padding: 18px 20px; max-width: 300px; animation: factFloat 3s ease-in-out infinite;
+  }
+  @keyframes factFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .fact-label { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-primary); margin-bottom: 8px; }
+  .fact-text { font-size: 14px; line-height: 1.5; opacity: 1; transition: opacity 0.3s ease; }
+  .fact-text.fact-fade { opacity: 0; }
 
   .weight-input-wrap { display: flex; align-items: center; gap: 12px; margin-top: 24px; }
   .weight-input {
@@ -197,9 +224,7 @@
   }
   @keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-  .loading-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
-  .spinner { width: 36px; height: 36px; border: 3px solid #2A2A2A; border-top-color: var(--accent-primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 18px; }
   .error-box { background: rgba(255,80,80,0.1); border: 1px solid #663333; color: #FF8080; padding: 12px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
 
   .btn-ghost { min-height: var(--tap-target-sm); background: none; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; width: 100%; margin-top: 10px; }
@@ -209,7 +234,7 @@
 <div class="phone-frame" id="phoneFrame"></div>
 
 <script>
-const PLAN_SCHEMA_VERSION = 2;
+const PLAN_SCHEMA_VERSION = 3;
 
 const STORAGE_KEYS = {
   name: 'gymbuddy_name',
@@ -229,6 +254,19 @@ const MET_WARMCOOL = 3.5;
 const MET_EXERCISE = 5.0;
 const DEFAULT_WEIGHT_KG = 70; // fallback for plans generated before the weight step existed
 
+const FITNESS_FACTS = [
+  'Muscle doesn\'t "turn into" fat — they\'re completely different tissues.',
+  'Lifting won\'t make you bulky overnight; visible muscle takes months of work.',
+  'Consistency beats intensity: 3 okay workouts a week beat 1 perfect one.',
+  'Dal, eggs, curd and paneer are protein sources — no shake required.',
+  'Muscles grow on rest days, not during the workout itself.',
+  'A 10-minute walk after meals helps steady your blood sugar.',
+  'No soreness? The workout still worked. Soreness isn\'t the goal.',
+  'Strength training keeps burning calories for hours after you finish.',
+  'Mild dehydration often feels like hunger — drink water first.',
+  'Form beats weight: master the movement before adding kilos.',
+];
+
 const STATE = {
   screen: 'profile',
   name: localStorage.getItem(STORAGE_KEYS.name) || '',
@@ -245,15 +283,23 @@ const STATE = {
   videoCache: {},
   videoLoading: {},
   videoError: {},
+  videoVisible: {},
   activeTimer: null,
   setFlow: null,
   swaps: {},
   nextMeal: null,
   mediaMode: 'video',
+  mealIdeas: {},
+  mealIdeasLoading: {},
+  mealIdeasError: {},
+  recipes: {},
+  recipeLoading: {},
+  recipeError: {},
+  mealExpand: {},
 };
 
 // A stored plan is usable only if it carries the current schema version and
-// every day has the fields the session/summary screens depend on.
+// every day has the fields the session screens depend on.
 function isPlanValid(plan) {
   if (!plan || plan.schema_version !== PLAN_SCHEMA_VERSION) return false;
   if (!Array.isArray(plan.week) || plan.week.length === 0) return false;
@@ -262,9 +308,7 @@ function isPlanValid(plan) {
       day &&
       Array.isArray(day.warmup) && day.warmup.length > 0 &&
       Array.isArray(day.exercises) && day.exercises.length > 0 &&
-      Array.isArray(day.cooldown) && day.cooldown.length > 0 &&
-      Array.isArray(day.meal_suggestions) && day.meal_suggestions.length > 0 &&
-      Array.isArray(day.craving_alternatives) && day.craving_alternatives.length > 0
+      Array.isArray(day.cooldown) && day.cooldown.length > 0
   );
 }
 
@@ -357,6 +401,41 @@ function getExerciseDisplay(ex, key) {
   };
 }
 
+// ---------- Loading facts ----------
+
+let loadingFactTimer = null;
+let factIndex = Math.floor(Math.random() * FITNESS_FACTS.length);
+
+function startLoadingFacts() {
+  stopLoadingFacts();
+  loadingFactTimer = setInterval(() => {
+    factIndex = (factIndex + 1) % FITNESS_FACTS.length;
+    const el = document.getElementById('factText');
+    if (!el) return;
+    el.classList.add('fact-fade');
+    setTimeout(() => {
+      el.textContent = FITNESS_FACTS[factIndex];
+      el.classList.remove('fact-fade');
+    }, 300);
+  }, 4000);
+}
+
+function stopLoadingFacts() {
+  if (loadingFactTimer) { clearInterval(loadingFactTimer); loadingFactTimer = null; }
+}
+
+// ---------- Tap debounce (ignore rapid double-taps) ----------
+
+let lastTapAt = 0;
+function guardTap(handler) {
+  return function guarded(e) {
+    const now = Date.now();
+    if (now - lastTapAt < 300) return;
+    lastTapAt = now;
+    handler.call(this, e);
+  };
+}
+
 // ---------- Timer engine (single active timer: phase countdown, rep counter, or rest) ----------
 
 function persistWorkLog() {
@@ -386,7 +465,7 @@ function tick() {
     completeActiveTimer();
     return;
   }
-  // Targeted DOM updates — avoid full render (would restart screen animations every second)
+  // Ticks update ONLY the changed DOM nodes — never a full render()
   if (t.kind === 'reps' && t.mode === 'reps') {
     const rep = Math.min(Math.floor(t.elapsed / SECONDS_PER_REP) + 1, t.totalReps);
     const el = document.getElementById('repNumber');
@@ -395,12 +474,12 @@ function tick() {
       el.classList.remove('pulse');
       void el.offsetWidth;
       el.classList.add('pulse');
-      // Coach avatar "counts with you" — pulse in sync with each rep
-      const avatarEl = document.getElementById('coachAvatar');
-      if (avatarEl) {
-        avatarEl.classList.remove('pulse');
-        void avatarEl.offsetWidth;
-        avatarEl.classList.add('pulse');
+      // Coach avatar "counts with you" — restart the squat cycle at each rep boundary
+      const fig = document.getElementById('coachFigure');
+      if (fig) {
+        fig.classList.remove('exercising');
+        void fig.offsetWidth;
+        fig.classList.add('exercising');
       }
     }
   } else {
@@ -570,6 +649,119 @@ function dismissDayPreview() {
   localStorage.setItem(STORAGE_KEYS.lastDaySummary, JSON.stringify(STATE.lastDaySummary));
 }
 
+// ---------- Lazy meal ideas + recipes ----------
+
+async function fetchMealIdeas(mealType) {
+  if (STATE.mealIdeas[mealType] || STATE.mealIdeasLoading[mealType]) return;
+  STATE.mealIdeasLoading[mealType] = true;
+  STATE.mealIdeasError[mealType] = null;
+  render();
+  try {
+    const response = await fetch('/api/meal-ideas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mealType, goal: STATE.onboarding.goal }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to get meal ideas');
+    STATE.mealIdeas[mealType] = { ideas: data.ideas || [], cravingSwaps: data.cravingSwaps || [] };
+  } catch (err) {
+    STATE.mealIdeasError[mealType] = err.message;
+  } finally {
+    STATE.mealIdeasLoading[mealType] = false;
+    render();
+  }
+}
+
+async function fetchRecipe(mealName) {
+  if (STATE.recipes[mealName] || STATE.recipeLoading[mealName]) return;
+  STATE.recipeLoading[mealName] = true;
+  STATE.recipeError[mealName] = null;
+  render();
+  try {
+    const response = await fetch('/api/recipe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mealName }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to get recipe');
+    STATE.recipes[mealName] = { steps: data.steps || [], ingredients: data.ingredients || [] };
+  } catch (err) {
+    STATE.recipeError[mealName] = err.message;
+  } finally {
+    STATE.recipeLoading[mealName] = false;
+    render();
+  }
+}
+
+function toggleMealExpand(idea, kind) {
+  STATE.mealExpand[idea] = STATE.mealExpand[idea] === kind ? null : kind;
+  if (STATE.mealExpand[idea]) fetchRecipe(idea);
+  render();
+}
+
+function copyAndOrderIngredients(idea) {
+  const recipe = STATE.recipes[idea];
+  if (recipe && recipe.ingredients && recipe.ingredients.length) {
+    const text = recipe.ingredients.map((i) => i.name).join('\n');
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+  }
+  window.open('https://www.swiggy.com/instamart', '_blank', 'noopener');
+}
+
+// ---------- Video (fetch once, then show/hide toggle; iframe only in DOM while visible) ----------
+
+function renderVideoControl(vKey, searchTerm, label) {
+  const cached = STATE.videoCache[vKey];
+  const loading = !!STATE.videoLoading[vKey];
+  const visible = !!STATE.videoVisible[vKey];
+  const err = STATE.videoError[vKey];
+  let btnLabel = label;
+  if (loading) btnLabel = '⏳ Loading…';
+  else if (cached && visible) btnLabel = 'Hide Video';
+  const button = `<button class="btn-video-pill" data-video-key="${vKey}" data-search-term="${escapeHtml(searchTerm)}" ${loading ? 'disabled' : ''}>${btnLabel}</button>`;
+  let area = '';
+  if (cached && visible) {
+    area = `<div class="video-area"><iframe class="video-embed" loading="lazy" src="https://www.youtube.com/embed/${escapeHtml(cached)}" title="${escapeHtml(searchTerm)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+  } else if (loading) {
+    area = `<div class="video-area"><div class="video-loading">Loading video…</div></div>`;
+  } else if (err) {
+    area = `<div class="video-area"><div class="video-error">${escapeHtml(err)}</div></div>`;
+  }
+  return { button, area };
+}
+
+async function toggleOrFetchVideo(vKey, searchTerm) {
+  if (STATE.videoCache[vKey]) {
+    STATE.videoVisible[vKey] = !STATE.videoVisible[vKey];
+    render();
+    return;
+  }
+  if (STATE.videoLoading[vKey]) return;
+  STATE.videoLoading[vKey] = true;
+  STATE.videoError[vKey] = null;
+  render();
+  try {
+    const response = await fetch('/api/get-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ searchTerm }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to load video');
+    STATE.videoCache[vKey] = data.videoId;
+    STATE.videoVisible[vKey] = true;
+  } catch (err) {
+    STATE.videoError[vKey] = err.message;
+  } finally {
+    STATE.videoLoading[vKey] = false;
+    render();
+  }
+}
+
 // If a plan already exists from a previous visit, go home — unless it predates the
 // current schema, in which case route to the friendly regenerate screen.
 if (STATE.plan && STATE.name) STATE.screen = isPlanValid(STATE.plan) ? 'home' : 'planRefresh';
@@ -694,8 +886,11 @@ function renderInjuries() {
 function renderLoading() {
   return `
     <div class="screen active loading-wrap">
-      <div class="spinner"></div>
       <div style="font-family:'Sora',sans-serif; font-weight:700;">Building your week...</div>
+      <div class="fact-card">
+        <div class="fact-label">💡 Did you know?</div>
+        <div class="fact-text" id="factText">${escapeHtml(FITNESS_FACTS[factIndex])}</div>
+      </div>
       <div class="text-secondary" style="font-size:13px;">Personalizing based on your answers</div>
     </div>`;
 }
@@ -779,6 +974,7 @@ function renderSessionTimerCurrent(entry, key, idx, badge) {
   const item = entry.item;
   const seconds = parseDurationToSeconds(item.duration);
   const t = (STATE.activeTimer && STATE.activeTimer.key === key && STATE.activeTimer.kind === 'phase') ? STATE.activeTimer : null;
+  const vc = renderVideoControl(key, item.name, '▶ Demo Video');
 
   let rightHtml = '';
   if (t) {
@@ -800,7 +996,9 @@ function renderSessionTimerCurrent(entry, key, idx, badge) {
     <div class="session-item-controls">
       ${t ? `<button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>` : ''}
       <button class="btn-skip" data-skip-index="${idx}">Skip</button>
-    </div>`;
+      ${vc.button}
+    </div>
+    ${vc.area}`;
 }
 
 function renderSetFlow(ex, key, idx, totalSets) {
@@ -848,37 +1046,36 @@ function renderSetFlow(ex, key, idx, totalSets) {
     </div>`;
 }
 
+function renderCoachAvatar(repsRunning) {
+  return `
+    <div class="coach-avatar-wrap">
+      <div class="coach-figure ${repsRunning ? 'exercising' : 'resting'}" id="coachFigure">
+        <span class="coach-line coach-line-left"></span>
+        <span class="coach-emoji">🏋️</span>
+        <span class="coach-line coach-line-right"></span>
+      </div>
+      <div class="coach-ground"></div>
+      <div class="coach-avatar-label">Coach Avatar (preview)</div>
+    </div>`;
+}
+
 function renderSessionExerciseCurrent(entry, key, idx) {
   const ex = entry.item;
   const disp = getExerciseDisplay(ex, key);
   const vKey = videoStateKey(key);
   const expanded = !!STATE.expanded[key];
-  const cachedVideoId = STATE.videoCache[vKey];
-  const loadingVideo = !!STATE.videoLoading[vKey];
-  const videoError = STATE.videoError[vKey];
   const totalSets = parseInt(ex.sets, 10) || 1;
   const t = STATE.activeTimer;
-  const repsRunning = t && t.key === key && t.kind === 'reps' && t.mode === 'reps' && !t.paused;
+  const repsRunning = !!(t && t.key === key && t.kind === 'reps' && !t.paused);
 
   let mediaHtml = '';
   let videoButtonHtml = '';
   if (STATE.mediaMode === 'avatar') {
-    mediaHtml = `
-      <div class="coach-avatar-wrap">
-        <div class="coach-avatar ${repsRunning ? '' : 'idle-bounce'}" id="coachAvatar">🏋️</div>
-        <div class="coach-avatar-label">Coach Avatar (preview)</div>
-      </div>`;
+    mediaHtml = renderCoachAvatar(repsRunning);
   } else {
-    let videoAreaHtml = '';
-    if (cachedVideoId) {
-      videoAreaHtml = `<iframe class="video-embed" src="https://www.youtube.com/embed/${escapeHtml(cachedVideoId)}" title="${escapeHtml(disp.name)} demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (loadingVideo) {
-      videoAreaHtml = `<div class="video-loading">Loading demo…</div>`;
-    } else if (videoError) {
-      videoAreaHtml = `<div class="video-error">${escapeHtml(videoError)}</div>`;
-    }
-    mediaHtml = videoAreaHtml ? `<div class="video-area">${videoAreaHtml}</div>` : '';
-    videoButtonHtml = `<button class="btn-video-pill" data-video-key="${vKey}" data-search-term="${escapeHtml(disp.searchTerm)}" ${(cachedVideoId || loadingVideo) ? 'disabled' : ''}>${loadingVideo ? '⏳ Loading…' : '▶ Demo Video'}</button>`;
+    const vc = renderVideoControl(vKey, disp.searchTerm, '▶ Demo Video');
+    videoButtonHtml = vc.button;
+    mediaHtml = vc.area;
   }
 
   const detailHtml = expanded ? `
@@ -892,6 +1089,7 @@ function renderSessionExerciseCurrent(entry, key, idx) {
         <div class="session-item-name">${escapeHtml(disp.name)}</div>
         ${disp.swapped ? `<div class="swap-label">Switched from: ${escapeHtml(disp.originalName)}</div>` : ''}
         <div class="session-item-meta">${totalSets} sets × ${escapeHtml(ex.reps)} · tap for details</div>
+        ${ex.suggested_weight ? `<div class="session-item-meta">🏷 ${escapeHtml(ex.suggested_weight)}</div>` : ''}
       </div>
       ${videoButtonHtml}
     </div>
@@ -958,7 +1156,7 @@ function renderSession() {
   }).join('');
 
   const allDone = currentIndex >= total;
-  const pct = total ? Math.round((Math.min(currentIndex, total) / total) * 100) : 0;
+  const pct = total ? Math.min(currentIndex, total) / total : 0;
 
   return `
     <div class="screen active">
@@ -972,7 +1170,7 @@ function renderSession() {
           <button class="seg-btn ${STATE.mediaMode === 'avatar' ? 'active' : ''}" data-media-mode="avatar">Coach Avatar</button>
         </div>
       </div>
-      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+      <div class="progress-track"><div class="progress-fill" style="transform:scaleX(${pct.toFixed(3)});"></div></div>
       <div class="session-progress-label">${Math.min(currentIndex, total)} of ${total} complete</div>
       <div>
         ${itemsHtml}
@@ -983,6 +1181,41 @@ function renderSession() {
 }
 
 // ---------- Summary screen ----------
+
+function renderMealIdeaCard(idea) {
+  const expand = STATE.mealExpand[idea];
+  const recipe = STATE.recipes[idea];
+  const loading = !!STATE.recipeLoading[idea];
+  const err = STATE.recipeError[idea];
+
+  let expandedHtml = '';
+  if (expand && loading) {
+    expandedHtml = `<div class="video-loading" style="margin-top:8px;">Loading recipe…</div>`;
+  } else if (expand && err) {
+    expandedHtml = `<div class="video-error">${escapeHtml(err)}</div>`;
+  } else if (expand === 'recipe' && recipe) {
+    const vc = renderVideoControl(`meal:${idea}`, `${idea} recipe`, '▶ Recipe Video');
+    expandedHtml = `
+      <ol class="recipe-steps">${recipe.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ol>
+      <div style="margin-top:10px;">${vc.button}</div>
+      ${vc.area}`;
+  } else if (expand === 'ingredients' && recipe) {
+    expandedHtml = `
+      <ul class="ingredient-list">${recipe.ingredients.map((ing) =>
+        `<li><strong>${escapeHtml(ing.name)}</strong>${ing.alternative ? ` — <span class="ingredient-alt">${escapeHtml(ing.alternative)}</span>` : ''}</li>`).join('')}</ul>
+      <button class="btn-skip" data-copy-order="${escapeHtml(idea)}" style="margin-top:10px;">Copy list · Order on Instamart</button>`;
+  }
+
+  return `
+    <li class="meal-idea">
+      <div class="meal-idea-name">${escapeHtml(idea)}</div>
+      <div class="meal-idea-actions">
+        <button class="btn-skip ${expand === 'recipe' ? 'active-toggle' : ''}" data-recipe-for="${escapeHtml(idea)}">Recipe</button>
+        <button class="btn-skip ${expand === 'ingredients' ? 'active-toggle' : ''}" data-ingredients-for="${escapeHtml(idea)}">Ingredients</button>
+      </div>
+      ${expandedHtml}
+    </li>`;
+}
 
 function renderSummary() {
   if (!STATE.plan) return renderGoal();
@@ -997,13 +1230,26 @@ function renderSummary() {
   const mealChips = ['Breakfast', 'Lunch', 'Dinner', 'Snack'].map((m) =>
     `<button class="meal-chip ${STATE.nextMeal === m ? 'selected' : ''}" data-meal="${m}">${m}</button>`).join('');
 
-  const meals = (day.meal_suggestions || []).map((m) => `<li>${escapeHtml(m)}</li>`).join('');
-  const cravings = (day.craving_alternatives || []).map((c) => `<li>${escapeHtml(c)}</li>`).join('');
-
-  const mealSectionHtml = STATE.nextMeal
-    ? `<div class="phase-label" style="margin-top:14px;">🍽 ${escapeHtml(STATE.nextMeal)} ideas</div>
-       <ul class="summary-list">${meals}</ul>`
-    : '';
+  let mealSectionHtml = '';
+  let cravingsHtml = '';
+  if (STATE.nextMeal) {
+    const m = STATE.nextMeal;
+    if (STATE.mealIdeasLoading[m]) {
+      mealSectionHtml = `<div class="video-loading" style="margin-top:12px;">Getting ${escapeHtml(m)} ideas…</div>`;
+    } else if (STATE.mealIdeasError[m]) {
+      mealSectionHtml = `<div class="error-box">${escapeHtml(STATE.mealIdeasError[m])} — tap the chip to retry.</div>`;
+    } else if (STATE.mealIdeas[m]) {
+      mealSectionHtml = `
+        <div class="phase-label" style="margin-top:14px;">🍽 ${escapeHtml(m)} ideas</div>
+        <ul class="summary-list">${STATE.mealIdeas[m].ideas.map(renderMealIdeaCard).join('')}</ul>`;
+      const swaps = STATE.mealIdeas[m].cravingSwaps || [];
+      if (swaps.length) {
+        cravingsHtml = `
+          <div class="phase-label" style="margin-top:18px;">🍫 Craving Swaps</div>
+          <ul class="summary-list">${swaps.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`;
+      }
+    }
+  }
 
   return `
     <div class="screen active">
@@ -1020,8 +1266,7 @@ function renderSummary() {
       <div class="phase-label" style="margin-top:18px;">What's your next meal?</div>
       <div class="meal-chips">${mealChips}</div>
       ${mealSectionHtml}
-      <div class="phase-label" style="margin-top:18px;">🍫 Craving Swaps</div>
-      <ul class="summary-list">${cravings}</ul>
+      ${cravingsHtml}
       <button class="btn-primary" id="markDayCompleteBtn" style="margin-top:24px;">Mark Day Complete &amp; Continue</button>
     </div>`;
 }
@@ -1039,6 +1284,14 @@ function resetDayScopedState() {
   STATE.videoCache = {};
   STATE.videoLoading = {};
   STATE.videoError = {};
+  STATE.videoVisible = {};
+  STATE.mealIdeas = {};
+  STATE.mealIdeasLoading = {};
+  STATE.mealIdeasError = {};
+  STATE.recipes = {};
+  STATE.recipeLoading = {};
+  STATE.recipeError = {};
+  STATE.mealExpand = {};
   localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
   persistWorkLog();
 }
@@ -1089,10 +1342,10 @@ function attachListeners() {
   });
 
   const generateBtn = document.getElementById('generatePlanBtn');
-  if (generateBtn) generateBtn.addEventListener('click', generatePlan);
+  if (generateBtn) generateBtn.addEventListener('click', guardTap(generatePlan));
 
   const regenerateBtn = document.getElementById('regeneratePlanBtn');
-  if (regenerateBtn) regenerateBtn.addEventListener('click', () => {
+  if (regenerateBtn) regenerateBtn.addEventListener('click', guardTap(() => {
     const o = STATE.onboarding;
     if (o.experience_level && o.days_available && o.goal) {
       generatePlan();
@@ -1100,20 +1353,20 @@ function attachListeners() {
       STATE.screen = 'experience';
       render();
     }
-  });
+  }));
 
   const startDayBtn = document.getElementById('startDayBtn');
-  if (startDayBtn) startDayBtn.addEventListener('click', () => {
+  if (startDayBtn) startDayBtn.addEventListener('click', guardTap(() => {
     STATE.screen = 'session';
     render();
-  });
+  }));
 
   const previewStartBtn = document.getElementById('previewStartBtn');
-  if (previewStartBtn) previewStartBtn.addEventListener('click', () => {
+  if (previewStartBtn) previewStartBtn.addEventListener('click', guardTap(() => {
     dismissDayPreview();
     STATE.screen = 'session';
     render();
-  });
+  }));
 
   const previewBackdrop = document.getElementById('previewBackdrop');
   if (previewBackdrop) previewBackdrop.addEventListener('click', (e) => {
@@ -1124,21 +1377,21 @@ function attachListeners() {
   });
 
   const backToHomeBtn = document.getElementById('backToHomeBtn');
-  if (backToHomeBtn) backToHomeBtn.addEventListener('click', () => {
+  if (backToHomeBtn) backToHomeBtn.addEventListener('click', guardTap(() => {
     stopActiveTimer();
     STATE.screen = 'home';
     render();
-  });
+  }));
 
   const finishDayBtn = document.getElementById('finishDayBtn');
-  if (finishDayBtn) finishDayBtn.addEventListener('click', () => {
+  if (finishDayBtn) finishDayBtn.addEventListener('click', guardTap(() => {
     STATE.screen = 'summary';
     render();
     fireConfetti(true);
-  });
+  }));
 
   const markDayCompleteBtn = document.getElementById('markDayCompleteBtn');
-  if (markDayCompleteBtn) markDayCompleteBtn.addEventListener('click', completeActiveDay);
+  if (markDayCompleteBtn) markDayCompleteBtn.addEventListener('click', guardTap(completeActiveDay));
 
   document.querySelectorAll('[data-expand-key]').forEach((el) => {
     el.addEventListener('click', () => {
@@ -1156,37 +1409,18 @@ function attachListeners() {
   });
 
   document.querySelectorAll('button[data-video-key]').forEach((btn) => {
-    btn.addEventListener('click', async (e) => {
+    btn.addEventListener('click', guardTap((e) => {
       e.stopPropagation();
-      const key = btn.dataset.videoKey;
-      const searchTerm = btn.dataset.searchTerm;
-      STATE.videoLoading[key] = true;
-      STATE.videoError[key] = null;
-      render();
-      try {
-        const response = await fetch('/api/get-video', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ searchTerm }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Failed to load video');
-        STATE.videoCache[key] = data.videoId;
-      } catch (err) {
-        STATE.videoError[key] = err.message;
-      } finally {
-        STATE.videoLoading[key] = false;
-        render();
-      }
-    });
+      toggleOrFetchVideo(btn.dataset.videoKey, btn.dataset.searchTerm);
+    }));
   });
 
   document.querySelectorAll('[data-phase-start]').forEach((btn) => {
-    btn.addEventListener('click', () => startPhaseTimerFor(parseInt(btn.dataset.phaseStart, 10)));
+    btn.addEventListener('click', guardTap(() => startPhaseTimerFor(parseInt(btn.dataset.phaseStart, 10))));
   });
 
   document.querySelectorAll('[data-start-set]').forEach((btn) => {
-    btn.addEventListener('click', () => startSetTimerFor(parseInt(btn.dataset.startSet, 10)));
+    btn.addEventListener('click', guardTap(() => startSetTimerFor(parseInt(btn.dataset.startSet, 10))));
   });
 
   document.querySelectorAll('[data-pause-toggle]').forEach((btn) => {
@@ -1194,19 +1428,19 @@ function attachListeners() {
   });
 
   document.querySelectorAll('[data-skip-set]').forEach((btn) => {
-    btn.addEventListener('click', () => skipCurrentSet());
+    btn.addEventListener('click', guardTap(() => skipCurrentSet()));
   });
 
   document.querySelectorAll('[data-skip-rest]').forEach((btn) => {
-    btn.addEventListener('click', () => skipRest());
+    btn.addEventListener('click', guardTap(() => skipRest()));
   });
 
   document.querySelectorAll('[data-skip-exercise]').forEach((btn) => {
-    btn.addEventListener('click', () => skipSequenceItem(parseInt(btn.dataset.skipExercise, 10)));
+    btn.addEventListener('click', guardTap(() => skipSequenceItem(parseInt(btn.dataset.skipExercise, 10))));
   });
 
   document.querySelectorAll('.btn-skip[data-skip-index]').forEach((btn) => {
-    btn.addEventListener('click', () => skipSequenceItem(parseInt(btn.dataset.skipIndex, 10)));
+    btn.addEventListener('click', guardTap(() => skipSequenceItem(parseInt(btn.dataset.skipIndex, 10))));
   });
 
   document.querySelectorAll('[data-swap-key]').forEach((btn) => {
@@ -1219,10 +1453,23 @@ function attachListeners() {
   });
 
   document.querySelectorAll('.meal-chip[data-meal]').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', guardTap(() => {
       STATE.nextMeal = btn.dataset.meal;
       render();
-    });
+      fetchMealIdeas(btn.dataset.meal);
+    }));
+  });
+
+  document.querySelectorAll('[data-recipe-for]').forEach((btn) => {
+    btn.addEventListener('click', guardTap(() => toggleMealExpand(btn.dataset.recipeFor, 'recipe')));
+  });
+
+  document.querySelectorAll('[data-ingredients-for]').forEach((btn) => {
+    btn.addEventListener('click', guardTap(() => toggleMealExpand(btn.dataset.ingredientsFor, 'ingredients')));
+  });
+
+  document.querySelectorAll('[data-copy-order]').forEach((btn) => {
+    btn.addEventListener('click', guardTap(() => copyAndOrderIngredients(btn.dataset.copyOrder)));
   });
 
   const restartBtn = document.getElementById('restartBtn');
@@ -1249,6 +1496,7 @@ async function generatePlan() {
   STATE.screen = 'loading';
   STATE.error = null;
   render();
+  startLoadingFacts();
 
   try {
     const response = await fetch('/api/generate-plan', {
@@ -1265,9 +1513,11 @@ async function generatePlan() {
     localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
     localStorage.removeItem(STORAGE_KEYS.lastDaySummary);
     resetDayScopedState();
+    stopLoadingFacts();
     STATE.screen = 'home';
     render();
   } catch (err) {
+    stopLoadingFacts();
     STATE.error = "Couldn't generate your plan: " + err.message + '. Please try again.';
     // Show the error on the screen that has the generate/regenerate button
     STATE.screen = (STATE.plan && !isPlanValid(STATE.plan)) ? 'planRefresh' : 'injuries';

@@ -4,8 +4,8 @@
 // never committed to the repo, never exposed to the browser).
 
 // A plan is only returned to the client if EVERY day is complete:
-// non-empty warmup/exercises/cooldown, and 2+ meal_suggestions and
-// craving_alternatives. Partial plans are never returned.
+// non-empty warmup/exercises/cooldown. Partial plans are never returned.
+// (Meal ideas moved to the lazy /api/meal-ideas endpoint to keep this call small.)
 export function validatePlan(parsed) {
   if (!parsed || !Array.isArray(parsed.week) || parsed.week.length === 0) return false;
   return parsed.week.every(
@@ -13,9 +13,7 @@ export function validatePlan(parsed) {
       day &&
       Array.isArray(day.warmup) && day.warmup.length > 0 &&
       Array.isArray(day.exercises) && day.exercises.length > 0 &&
-      Array.isArray(day.cooldown) && day.cooldown.length > 0 &&
-      Array.isArray(day.meal_suggestions) && day.meal_suggestions.length >= 2 &&
-      Array.isArray(day.craving_alternatives) && day.craving_alternatives.length >= 2
+      Array.isArray(day.cooldown) && day.cooldown.length > 0
   );
 }
 
@@ -49,15 +47,13 @@ Rules:
 - Beginner-friendly exercises only if experience_level is beginner; scale difficulty appropriately otherwise
 - Each day has three phases: warmup, exercises (main strength work), and cooldown
 - "warmup": 2-3 items, each with name, duration (e.g. "3 min"), and instructions (exactly 1 short sentence)
-- "exercises": the main strength work. Each item needs: name, sets, reps, instructions (exactly 1 short sentence that includes any relevant safety guidance — e.g. if injuries are listed, note how to modify or avoid aggravating them), alternative (a substitute exercise name for someone who can't access equipment or has a limitation), and video_search_term (a short phrase usable to search YouTube for a demo)
+- "exercises": the main strength work. Each item needs: name, sets, reps, suggested_weight (a short beginner-appropriate load suggestion, e.g. "Bodyweight only" or "Start with 2-5 kg dumbbells"), instructions (exactly 1 short sentence that includes any relevant safety guidance — e.g. if injuries are listed, note how to modify or avoid aggravating them), alternative (a substitute exercise name for someone who can't access equipment or has a limitation), and video_search_term (a short phrase usable to search YouTube for a demo)
 - "cooldown": 1-2 items, each with name, duration, and instructions (exactly 1 short sentence)
 - If injuries are listed, exclude contraindicated movements entirely and fold any relevant safety guidance into the "instructions" field of affected items — do not use a separate safety field
 - Include one short, practical diet_tip per day (not a full meal plan)
-- "meal_suggestions": exactly 2 short post-workout meal ideas, 1 short phrase each
-- "craving_alternatives": exactly 2 short healthy swap ideas for common cravings, 1 short phrase each
 - Be concise everywhere. Do not add extra explanation, elaboration, or commentary beyond what's requested — every field should be as short as possible while staying useful.
 - Output STRICT JSON ONLY. No markdown, no prose, no code fences, no explanations before or after. Keep names and video_search_terms short (under 6 words). Match this exact schema:
-{"week":[{"day":"","focus":"","warmup":[{"name":"","duration":"","instructions":""}],"exercises":[{"name":"","sets":0,"reps":"","instructions":"","alternative":"","video_search_term":""}],"cooldown":[{"name":"","duration":"","instructions":""}],"diet_tip":"","meal_suggestions":["",""],"craving_alternatives":["",""]}]}`;
+{"week":[{"day":"","focus":"","warmup":[{"name":"","duration":"","instructions":""}],"exercises":[{"name":"","sets":0,"reps":"","suggested_weight":"","instructions":"","alternative":"","video_search_term":""}],"cooldown":[{"name":"","duration":"","instructions":""}],"diet_tip":""}]}`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${encodeURIComponent(apiKey)}`;
   const requestBody = JSON.stringify({

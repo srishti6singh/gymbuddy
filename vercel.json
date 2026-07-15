@@ -6,6 +6,12 @@
     },
     "api/get-video.js": {
       "maxDuration": 10
+    },
+    "api/meal-ideas.js": {
+      "maxDuration": 10
+    },
+    "api/recipe.js": {
+      "maxDuration": 10
     }
   }
 }
