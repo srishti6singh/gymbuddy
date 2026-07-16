@@ -39,7 +39,7 @@
     background: var(--bg-base); border-radius: 32px; border: 1px solid #2A2A2A;
     overflow: hidden; position: relative; display: flex; flex-direction: column;
   }
-  .screen { display: none; flex-direction: column; padding: 20px 20px 16px; position: relative; overflow-y: auto; height: 100%; }
+  .screen { display: none; flex-direction: column; padding: 24px 16px; position: relative; overflow-y: auto; height: 100%; }
   .screen.active { display: flex; animation: screenIn 0.32s cubic-bezier(0.16,1,0.3,1); }
   @keyframes screenIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
 
@@ -122,6 +122,36 @@
     font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; padding: 0 10px; cursor: pointer;
   }
   .seg-btn.active { background: rgba(57,255,20,0.12); color: var(--accent-primary); }
+
+  /* Exercise detail redesign: media tabs, action row, full-width CTA, accordion */
+  .media-tabs { display: flex; border: 1.5px solid #333; border-radius: 12px; overflow: hidden; margin-top: 12px; }
+  .media-tab {
+    flex: 1; min-height: var(--tap-target-sm); background: none; border: none; color: var(--text-secondary);
+    font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .media-tab.active { background: rgba(57,255,20,0.12); color: var(--accent-primary); }
+  .media-stage { margin-top: 10px; }
+  .video-placeholder {
+    background: rgba(255,255,255,0.03); border: 1.5px dashed #333; border-radius: var(--radius-sm);
+    padding: 22px 12px; text-align: center;
+  }
+  .action-row { display: flex; gap: 10px; margin-top: 12px; }
+  .action-stat { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid #2A2A2A; border-radius: 10px; padding: 10px 12px; text-align: center; }
+  .action-stat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+  .action-stat-value { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 800; margin-top: 3px; }
+  .set-progress-label { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-align: center; margin-top: 12px; }
+  .btn-start-set {
+    width: 100%; min-height: 54px; background: var(--accent-primary); color: #0A1A05; border: none;
+    border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 800;
+    cursor: pointer; margin-top: 8px;
+  }
+  .accordion-toggle {
+    width: 100%; min-height: var(--tap-target-sm); background: none; border: none; border-top: 1px solid #2A2A2A;
+    color: var(--text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 12px;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 2px;
+  }
+  .accordion-body .session-item-instructions { padding-left: 0; margin-top: 2px; }
+  .accordion-body .alt-swap-btn { margin-left: 0; }
 
   /* Coach Avatar — pure CSS, two states: exercising (squat bounce synced to rep
      cadence) and resting (slow breathing). All animation on transform/opacity. */
@@ -1097,10 +1127,8 @@ function renderSetFlow(ex, key, idx, totalSets) {
       </div>`;
   }
   return `
-    <div class="session-item-controls">
-      <div class="set-label">Set ${(sf ? sf.setIndex : 0) + 1} of ${totalSets}</div>
-      <button class="btn-done" data-start-set="${idx}">▶ Start Set</button>
-    </div>`;
+    <div class="set-progress-label">Set ${(sf ? sf.setIndex : 0) + 1} of ${totalSets}</div>
+    <button class="btn-start-set" data-start-set="${idx}">▶ Start Set</button>`;
 }
 
 function renderCoachAvatar(repsRunning) {
@@ -1116,6 +1144,25 @@ function renderCoachAvatar(repsRunning) {
     </div>`;
 }
 
+// Demo View tab content: the single video player for the active exercise.
+// Reuses the same STATE.video* keys and data attributes, so the existing
+// lazy fetch (toggleOrFetchVideo) works unchanged.
+function renderDemoStage(vKey, searchTerm) {
+  const cached = STATE.videoCache[vKey];
+  const loading = !!STATE.videoLoading[vKey];
+  const err = STATE.videoError[vKey];
+  if (cached) {
+    return `<div class="media-stage"><iframe class="video-embed" loading="lazy" src="https://www.youtube.com/embed/${escapeHtml(cached)}" title="${escapeHtml(searchTerm)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+  }
+  if (loading) {
+    return `<div class="media-stage"><div class="video-placeholder"><div class="video-loading">Loading video…</div></div></div>`;
+  }
+  return `<div class="media-stage"><div class="video-placeholder">
+    ${err ? `<div class="video-error" style="margin:0 0 8px;">${escapeHtml(err)}</div>` : ''}
+    <button class="btn-video-pill" data-video-key="${vKey}" data-search-term="${escapeHtml(searchTerm)}">▶ Load Demo Video</button>
+  </div></div>`;
+}
+
 function renderSessionExerciseCurrent(entry, key, idx) {
   const ex = entry.item;
   const disp = getExerciseDisplay(ex, key);
@@ -1125,34 +1172,46 @@ function renderSessionExerciseCurrent(entry, key, idx) {
   const t = STATE.activeTimer;
   const repsRunning = !!(t && t.key === key && t.kind === 'reps' && !t.paused);
 
-  let mediaHtml = '';
-  let videoButtonHtml = '';
-  if (STATE.mediaMode === 'avatar') {
-    mediaHtml = renderCoachAvatar(repsRunning);
-  } else {
-    const vc = renderVideoControl(vKey, disp.searchTerm, '▶ Demo Video');
-    videoButtonHtml = vc.button;
-    mediaHtml = vc.area;
-  }
+  // 1. Media tabs: exactly one player rendered at a time, chosen by the tab.
+  //    Backed by STATE.mediaMode, same as the session-header toggle.
+  const mediaTabs = `
+    <div class="media-tabs">
+      <button class="media-tab ${STATE.mediaMode === 'avatar' ? 'active' : ''}" data-media-mode="avatar">AI Coach View</button>
+      <button class="media-tab ${STATE.mediaMode === 'video' ? 'active' : ''}" data-media-mode="video">Demo View</button>
+    </div>`;
+  const stageHtml = STATE.mediaMode === 'avatar'
+    ? `<div class="media-stage">${renderCoachAvatar(repsRunning)}</div>`
+    : renderDemoStage(vKey, disp.searchTerm);
 
-  const detailHtml = expanded ? `
-    <div class="session-item-instructions">${escapeHtml(ex.instructions)}</div>
-    ${ex.alternative ? `<button class="alt-swap-btn" data-swap-key="${key}">⇄ ${disp.swapped ? `Switch back to: ${escapeHtml(ex.name)}` : `Alternative: ${escapeHtml(ex.alternative)}`}</button>` : ''}` : '';
+  // 2. Action row: target + rest, side by side.
+  const actionRow = `
+    <div class="action-row">
+      <div class="action-stat"><div class="action-stat-label">Target</div><div class="action-stat-value">${totalSets} × ${escapeHtml(ex.reps)}</div></div>
+      <div class="action-stat"><div class="action-stat-label">Rest</div><div class="action-stat-value">${REST_SECONDS}s</div></div>
+    </div>`;
+
+  // 4. Instructions collapsed by default into an accordion at the bottom.
+  const accordion = `
+    <button class="accordion-toggle" data-expand-key="${key}"><span>📋 View Instructions</span><span>${expanded ? '▴' : '▾'}</span></button>
+    ${expanded ? `<div class="accordion-body">
+      <div class="session-item-instructions">${escapeHtml(ex.instructions)}</div>
+      ${ex.alternative ? `<button class="alt-swap-btn" data-swap-key="${key}">⇄ ${disp.swapped ? `Switch back to: ${escapeHtml(ex.name)}` : `Alternative: ${escapeHtml(ex.alternative)}`}</button>` : ''}
+    </div>` : ''}`;
 
   return `
     <div class="session-item-row">
       <div class="session-item-badge">💪</div>
-      <div class="exercise-tap-area" data-expand-key="${key}">
+      <div style="flex:1; min-width:0;">
         <div class="session-item-name">${escapeHtml(disp.name)}</div>
         ${disp.swapped ? `<div class="swap-label">Switched from: ${escapeHtml(disp.originalName)}</div>` : ''}
-        <div class="session-item-meta">${totalSets} sets × ${escapeHtml(ex.reps)} · tap for details</div>
         ${ex.suggested_weight ? `<div class="session-item-meta">🏷 ${escapeHtml(ex.suggested_weight)}</div>` : ''}
       </div>
-      ${videoButtonHtml}
     </div>
-    ${mediaHtml}
-    ${detailHtml}
+    ${mediaTabs}
+    ${stageHtml}
+    ${actionRow}
     ${renderSetFlow(ex, key, idx, totalSets)}
+    ${accordion}
     <button class="skip-exercise-link" data-skip-exercise="${idx}">Skip Exercise</button>`;
 }
 
