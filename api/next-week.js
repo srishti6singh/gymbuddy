@@ -91,7 +91,7 @@ Rules:
 - Output STRICT JSON ONLY. No markdown, no prose, no code fences. Keep names and video_search_terms short (under 6 words). Match this exact schema:
 {"week":[{"day":"","focus":"","adaptation_note":"","warmup":[{"name":"","duration":"","instructions":""}],"exercises":[{"name":"","sets":0,"reps":"","suggested_weight":"","instructions":"","alternative":"","video_search_term":""}],"cooldown":[{"name":"","duration":"","instructions":""}],"diet_tip":""}]}`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`;
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
