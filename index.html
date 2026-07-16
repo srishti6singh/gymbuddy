@@ -270,6 +270,13 @@
   }
   .toast-banner.show { opacity: 1; transform: translate(-50%, 0); }
 
+  /* BMI goal-mismatch suggestion card — informational, never blocking. */
+  .bmi-card { background: rgba(255,193,7,0.07); border: 1.5px solid var(--accent-warn); border-radius: 12px; padding: 14px; margin-top: 18px; }
+  .bmi-card-title { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; color: var(--accent-warn); }
+  .bmi-card p { font-size: 13px; line-height: 1.5; margin-top: 6px; }
+  .bmi-card .btn-primary { margin-top: 12px; }
+  .bmi-card .btn-skip { margin-top: 8px; width: 100%; }
+
   .btn-ghost { min-height: var(--tap-target-sm); background: none; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; width: 100%; margin-top: 10px; }
 </style>
 </head>
@@ -605,11 +612,33 @@ function readStoredJSON(key, fallback) {
     return fallback;
   }
 }
+// Writes get the same protection as reads: in private tabs, in-app webviews,
+// or full-quota browsers setItem THROWS — an unhardened write inside
+// generatePlan's catch would kill the whole flow and nothing would persist,
+// making every reopen look like a fresh install (the "always lands on the
+// name screen" bug). With these wrappers the session still works in memory
+// and the console says exactly why persistence is unavailable.
+function writeStored(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (err) {
+    console.log('[gymbuddy] localStorage WRITE failed for "' + key + '" — progress will not survive a reload:', err.message);
+    return false;
+  }
+}
+function removeStored(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (err) {
+    console.log('[gymbuddy] localStorage remove failed for "' + key + '":', err.message);
+  }
+}
 
 const STATE = {
   screen: 'profile',
   name: readStored(STORAGE_KEYS.name) || '',
-  onboarding: readStoredJSON(STORAGE_KEYS.onboarding, { experience_level: null, days_available: null, goal: null, injuries: '', weight: null }),
+  onboarding: readStoredJSON(STORAGE_KEYS.onboarding, { experience_level: null, days_available: null, goal: null, injuries: '', weight: null, height: null }),
   plan: readStoredJSON(STORAGE_KEYS.plan, null),
   dayProgress: readStoredJSON(STORAGE_KEYS.dayProgress, {}),
   sequenceProgress: readStoredJSON(STORAGE_KEYS.sequenceProgress, {}),
@@ -617,6 +646,8 @@ const STATE = {
   lastDaySummary: readStoredJSON(STORAGE_KEYS.lastDaySummary, null),
   streak: parseInt(readStored(STORAGE_KEYS.streak) || '0', 10),
   usingFallback: readStored(STORAGE_KEYS.usingFallback) === '1',
+  bmiSuggest: null,
+  bmiPromptResolved: false,
   loading: false,
   error: null,
   expanded: {},
@@ -779,7 +810,7 @@ function guardTap(handler) {
 // ---------- Timer engine (single active timer: phase countdown, rep counter, or rest) ----------
 
 function persistWorkLog() {
-  localStorage.setItem(STORAGE_KEYS.workLog, JSON.stringify(STATE.workLog));
+  writeStored(STORAGE_KEYS.workLog, JSON.stringify(STATE.workLog));
 }
 
 function startActiveTimer(config) {
@@ -931,7 +962,7 @@ function skipSequenceItem(idx) {
 
 function advanceSequence(index) {
   STATE.sequenceProgress[index] = true;
-  localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
+  writeStored(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
   render();
 }
 
@@ -974,9 +1005,9 @@ function completeActiveDay() {
   const dIdx = getActiveDayIndex();
   const summary = computeDayCalories();
   STATE.lastDaySummary = { dayIndex: dIdx, kcal: summary.kcal, activeMinutes: summary.activeMinutes, previewDismissed: false };
-  localStorage.setItem(STORAGE_KEYS.lastDaySummary, JSON.stringify(STATE.lastDaySummary));
+  writeStored(STORAGE_KEYS.lastDaySummary, JSON.stringify(STATE.lastDaySummary));
   STATE.dayProgress[dIdx] = true;
-  localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
+  writeStored(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
   resetDayScopedState();
   bumpStreakIfNeeded();
   STATE.screen = 'home';
@@ -986,7 +1017,7 @@ function completeActiveDay() {
 function dismissDayPreview() {
   if (!STATE.lastDaySummary) return;
   STATE.lastDaySummary.previewDismissed = true;
-  localStorage.setItem(STORAGE_KEYS.lastDaySummary, JSON.stringify(STATE.lastDaySummary));
+  writeStored(STORAGE_KEYS.lastDaySummary, JSON.stringify(STATE.lastDaySummary));
 }
 
 // ---------- Lazy meal ideas + recipes ----------
@@ -1116,7 +1147,15 @@ async function toggleOrFetchVideo(vKey, searchTerm) {
   const foundKeys = Object.entries(STORAGE_KEYS)
     .filter(([, storageKey]) => readStored(storageKey) !== null)
     .map(([shortName]) => shortName);
-  console.log('[gymbuddy] load: storage keys found →', foundKeys.length ? foundKeys.join(', ') : '(none)');
+  // Origin matters: localStorage is per-origin, so opening a different deploy
+  // URL (vercel preview vs production vs localhost) shows an empty app even
+  // though nothing was lost. This log makes that diagnosis instant.
+  console.log('[gymbuddy] load: origin=' + location.origin + ' · storage keys found →', foundKeys.length ? foundKeys.join(', ') : '(none)');
+  console.log('[gymbuddy] load: name=' + JSON.stringify(STATE.name),
+    '· plan=' + (STATE.plan ? 'schema v' + STATE.plan.schema_version + ' / ' + (Array.isArray(STATE.plan.week) ? STATE.plan.week.length + ' days' : 'no week array') : 'null'),
+    '· planValid=' + (STATE.plan ? isPlanValid(STATE.plan) : 'n/a'),
+    '· usingFallback=' + STATE.usingFallback,
+    '· onboarding={exp:' + STATE.onboarding.experience_level + ', days:' + STATE.onboarding.days_available + ', goal:' + STATE.onboarding.goal + ', weight:' + STATE.onboarding.weight + ', height:' + STATE.onboarding.height + '}');
 
   if (STATE.name && STATE.plan && isPlanValid(STATE.plan)) {
     STATE.screen = 'home';
@@ -1224,18 +1263,70 @@ function isValidWeight(value) {
   return !isNaN(v) && v >= 20 && v <= 300;
 }
 
+// Height is optional: blank is fine (BMI falls back to 165 cm), but a typed
+// value must be plausible.
+function isValidHeight(value) {
+  if (value === '' || value === null || value === undefined) return true;
+  const v = parseFloat(value);
+  return !isNaN(v) && v >= 100 && v <= 250;
+}
+
+// BMI = kg / m². Profiles saved before the height field existed (or with the
+// field left blank) default to 165 cm — never crash on missing height.
+function computeBMI(onboarding) {
+  const kg = parseFloat(onboarding && onboarding.weight);
+  if (isNaN(kg) || kg <= 0) return null;
+  const cm = parseFloat(onboarding && onboarding.height) || 165;
+  const m = cm / 100;
+  return Math.round((kg / (m * m)) * 10) / 10;
+}
+
+// Gentle guardrail, never a gate: suggest a better-matched goal when BMI and
+// goal point in opposite directions. Returns null when no suggestion applies.
+function bmiGoalSuggestion() {
+  const bmi = computeBMI(STATE.onboarding);
+  if (bmi === null) return null;
+  const goal = STATE.onboarding.goal;
+  if (bmi < 18.5 && goal === 'lose_weight') return { bmi, suggested: 'build_muscle', label: 'Build muscle', pitch: 'building strength' };
+  if (bmi > 30 && goal === 'build_muscle') return { bmi, suggested: 'lose_weight', label: 'Lose weight', pitch: 'steady fat loss' };
+  return null;
+}
+
 function renderWeight() {
   const weight = STATE.onboarding.weight || '';
+  const height = STATE.onboarding.height || '';
+  const canContinue = isValidWeight(weight) && isValidHeight(height);
+
+  let footerHtml;
+  if (STATE.bmiSuggest) {
+    // Inline suggestion card replaces Continue; both buttons proceed, so the
+    // user is informed but never blocked.
+    const s = STATE.bmiSuggest;
+    footerHtml = `
+      <div class="bmi-card">
+        <div class="bmi-card-title">💡 A quick thought</div>
+        <p>Based on your BMI (${s.bmi}), ${s.pitch} may serve you better — switch goal?</p>
+        <button class="btn-primary" data-bmi-switch>Switch to ${s.label}</button>
+        <button class="btn-skip" data-bmi-keep>Keep my choice</button>
+      </div>`;
+  } else {
+    footerHtml = `<button class="btn-primary" id="continueBtn" style="margin-top:20px;" ${canContinue?'':'disabled'}>Continue</button>`;
+  }
+
   return `
     <div class="screen active">
       ${renderDots(4)}
-      <h2>What's your weight?</h2>
-      <p class="text-secondary" style="margin-top:8px;">Used only to estimate calories you burn each session. Stays on this device.</p>
+      <h2>What's your weight and height?</h2>
+      <p class="text-secondary" style="margin-top:8px;">Used to estimate calories and tailor your plan. Stays on this device.</p>
       <div class="weight-input-wrap">
         <input id="weightInput" class="weight-input" type="number" inputmode="decimal" min="20" max="300" step="0.5" placeholder="e.g. 65" value="${escapeHtml(weight)}" />
         <span class="weight-unit">kg</span>
       </div>
-      <button class="btn-primary" id="continueBtn" style="margin-top:20px;" ${isValidWeight(weight)?'':'disabled'}>Continue</button>
+      <div class="weight-input-wrap" style="margin-top:10px;">
+        <input id="heightInput" class="weight-input" type="number" inputmode="decimal" min="100" max="250" step="1" placeholder="e.g. 165 (optional)" value="${escapeHtml(height)}" />
+        <span class="weight-unit">cm</span>
+      </div>
+      ${footerHtml}
     </div>`;
 }
 
@@ -1248,6 +1339,7 @@ function renderInjuries() {
       <p class="text-secondary" style="margin-top:8px;">Optional — we'll avoid movements that could aggravate them.</p>
       <textarea id="injuriesInput" class="injuries-input" placeholder="e.g. knee pain, lower back — or leave blank">${escapeHtml(injuries)}</textarea>
       <button class="btn-primary" id="generatePlanBtn" style="margin-top:20px;">Generate My Week</button>
+      <button class="btn-ghost" id="skipInjuriesBtn">Skip — no injuries</button>
       ${STATE.error ? `<div class="error-box">${escapeHtml(STATE.error)}</div>` : ''}
     </div>`;
 }
@@ -1701,7 +1793,7 @@ function resetDayScopedState() {
   STATE.recipeLoading = {};
   STATE.recipeError = {};
   STATE.mealExpand = {};
-  localStorage.setItem(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
+  writeStored(STORAGE_KEYS.sequenceProgress, JSON.stringify(STATE.sequenceProgress));
   persistWorkLog();
 }
 
@@ -1710,7 +1802,7 @@ function attachListeners() {
   if (profileBtn) profileBtn.addEventListener('click', () => {
     const val = document.getElementById('nameInput').value.trim();
     STATE.name = val || 'there';
-    localStorage.setItem(STORAGE_KEYS.name, STATE.name);
+    writeStored(STORAGE_KEYS.name, STATE.name);
     STATE.screen = 'experience';
     render();
   });
@@ -1722,7 +1814,7 @@ function attachListeners() {
       stack.querySelectorAll('.option-chip').forEach((c) => c.classList.remove('selected'));
       chip.classList.add('selected');
       STATE.onboarding[field] = chip.dataset.value;
-      localStorage.setItem(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+      writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
       render();
     });
   });
@@ -1732,26 +1824,73 @@ function attachListeners() {
     if (STATE.screen === 'experience') STATE.screen = 'days';
     else if (STATE.screen === 'days') STATE.screen = 'goal';
     else if (STATE.screen === 'goal') STATE.screen = 'weight';
-    else if (STATE.screen === 'weight') STATE.screen = 'injuries';
+    else if (STATE.screen === 'weight') {
+      // First moment both goal and BMI are known: surface the guardrail card
+      // once. Both of its buttons proceed — it informs, never blocks.
+      const suggestion = STATE.bmiPromptResolved ? null : bmiGoalSuggestion();
+      if (suggestion) {
+        STATE.bmiSuggest = suggestion;
+        render();
+        return;
+      }
+      STATE.screen = 'injuries';
+    }
     render();
   });
 
+  document.querySelectorAll('[data-bmi-switch]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      STATE.onboarding.goal = STATE.bmiSuggest.suggested;
+      writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+      STATE.bmiSuggest = null;
+      STATE.bmiPromptResolved = true;
+      STATE.screen = 'injuries';
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-bmi-keep]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      STATE.bmiSuggest = null;
+      STATE.bmiPromptResolved = true;
+      STATE.screen = 'injuries';
+      render();
+    });
+  });
+
   const weightInput = document.getElementById('weightInput');
+  const heightInput = document.getElementById('heightInput');
+  const syncBodyContinue = () => {
+    const btn = document.getElementById('continueBtn');
+    if (btn) btn.disabled = !isValidWeight(weightInput ? weightInput.value : STATE.onboarding.weight)
+      || !isValidHeight(heightInput ? heightInput.value : STATE.onboarding.height);
+  };
   if (weightInput) weightInput.addEventListener('input', () => {
     STATE.onboarding.weight = weightInput.value;
-    localStorage.setItem(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
-    const btn = document.getElementById('continueBtn');
-    if (btn) btn.disabled = !isValidWeight(weightInput.value);
+    writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+    syncBodyContinue();
+  });
+  if (heightInput) heightInput.addEventListener('input', () => {
+    STATE.onboarding.height = heightInput.value;
+    writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+    syncBodyContinue();
   });
 
   const injuriesInput = document.getElementById('injuriesInput');
   if (injuriesInput) injuriesInput.addEventListener('input', () => {
     STATE.onboarding.injuries = injuriesInput.value;
-    localStorage.setItem(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+    writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
   });
 
   const generateBtn = document.getElementById('generatePlanBtn');
   if (generateBtn) generateBtn.addEventListener('click', guardTap(generatePlan));
+
+  const skipInjuriesBtn = document.getElementById('skipInjuriesBtn');
+  if (skipInjuriesBtn) skipInjuriesBtn.addEventListener('click', guardTap(() => {
+    STATE.onboarding.injuries = '';
+    writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+    generatePlan();
+  }));
 
   const regenerateBtn = document.getElementById('regeneratePlanBtn');
   if (regenerateBtn) regenerateBtn.addEventListener('click', guardTap(() => {
@@ -1886,17 +2025,19 @@ function attachListeners() {
   if (restartBtn) restartBtn.addEventListener('click', () => {
     if (!confirm('This clears your current plan and progress. Continue?')) return;
     resetDayScopedState();
-    localStorage.removeItem(STORAGE_KEYS.plan);
-    localStorage.removeItem(STORAGE_KEYS.dayProgress);
-    localStorage.removeItem(STORAGE_KEYS.sequenceProgress);
-    localStorage.removeItem(STORAGE_KEYS.workLog);
-    localStorage.removeItem(STORAGE_KEYS.onboarding);
-    localStorage.removeItem(STORAGE_KEYS.lastDaySummary);
+    removeStored(STORAGE_KEYS.plan);
+    removeStored(STORAGE_KEYS.dayProgress);
+    removeStored(STORAGE_KEYS.sequenceProgress);
+    removeStored(STORAGE_KEYS.workLog);
+    removeStored(STORAGE_KEYS.onboarding);
+    removeStored(STORAGE_KEYS.lastDaySummary);
     STATE.plan = null;
     STATE.dayProgress = {};
     STATE.lastDaySummary = null;
     STATE.error = null;
-    STATE.onboarding = { experience_level: null, days_available: null, goal: null, injuries: '', weight: null };
+    STATE.onboarding = { experience_level: null, days_available: null, goal: null, injuries: '', weight: null, height: null };
+    STATE.bmiSuggest = null;
+    STATE.bmiPromptResolved = false;
     STATE.screen = 'experience';
     render();
   });
@@ -1928,12 +2069,12 @@ function adoptPlan(week, { fallback }) {
   STATE.plan = { schema_version: PLAN_SCHEMA_VERSION, week };
   STATE.dayProgress = {};
   STATE.lastDaySummary = null;
-  localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(STATE.plan));
-  localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
-  localStorage.removeItem(STORAGE_KEYS.lastDaySummary);
+  writeStored(STORAGE_KEYS.plan, JSON.stringify(STATE.plan));
+  writeStored(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
+  removeStored(STORAGE_KEYS.lastDaySummary);
   STATE.usingFallback = !!fallback;
-  if (fallback) localStorage.setItem(STORAGE_KEYS.usingFallback, '1');
-  else localStorage.removeItem(STORAGE_KEYS.usingFallback);
+  if (fallback) writeStored(STORAGE_KEYS.usingFallback, '1');
+  else removeStored(STORAGE_KEYS.usingFallback);
   resetDayScopedState();
 }
 
@@ -2007,11 +2148,11 @@ async function silentPlanRefresh() {
 
 function bumpStreakIfNeeded() {
   const today = new Date().toDateString();
-  const lastActive = localStorage.getItem(STORAGE_KEYS.lastActiveDay);
+  const lastActive = readStored(STORAGE_KEYS.lastActiveDay);
   if (lastActive !== today) {
     STATE.streak += 1;
-    localStorage.setItem(STORAGE_KEYS.lastActiveDay, today);
-    localStorage.setItem(STORAGE_KEYS.streak, String(STATE.streak));
+    writeStored(STORAGE_KEYS.lastActiveDay, today);
+    writeStored(STORAGE_KEYS.streak, String(STATE.streak));
   }
 }
 

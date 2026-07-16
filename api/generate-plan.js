@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server misconfigured: missing API key' });
   }
 
-  const { experience_level, days_available, goal, injuries: rawInjuries } = req.body || {};
+  const { experience_level, days_available, goal, injuries: rawInjuries, weight, height } = req.body || {};
 
   if (!experience_level || !days_available || !goal) {
     return res.status(400).json({ error: 'Missing required onboarding fields' });
@@ -43,13 +43,23 @@ export default async function handler(req, res) {
     injuries = 'none reported';
   }
 
+  // BMI = kg / m². Height is optional (older clients don't send it) —
+  // default 165 cm; skip the line entirely if weight is missing/invalid.
+  let bmiLine = '';
+  const kg = parseFloat(weight);
+  if (!isNaN(kg) && kg > 0) {
+    const m = (parseFloat(height) || 165) / 100;
+    const bmi = Math.round((kg / (m * m)) * 10) / 10;
+    bmiLine = `\n- User BMI: ${bmi} — bias exercise selection accordingly`;
+  }
+
   const prompt = `You are a certified fitness coach creating a beginner-safe weekly workout plan for a budget gym member in India.
 
 User profile:
 - Experience level: ${experience_level}
 - Days available per week: ${days_available}
 - Goal: ${goal}
-- Injuries/limitations: ${injuries || 'none reported'}
+- Injuries/limitations: ${injuries || 'none reported'}${bmiLine}
 
 Rules:
 - Create exactly ${days_available} workout days, with sensible rest/recovery between muscle groups
