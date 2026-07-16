@@ -977,7 +977,17 @@ function renderSessionTimerCurrent(entry, key, idx, badge) {
   const item = entry.item;
   const seconds = parseDurationToSeconds(item.duration);
   const t = (STATE.activeTimer && STATE.activeTimer.key === key && STATE.activeTimer.kind === 'phase') ? STATE.activeTimer : null;
-  const vc = renderVideoControl(key, item.name, '▶ Demo Video');
+
+  let mediaHtml = '';
+  let videoButtonHtml = '';
+  if (STATE.mediaMode === 'avatar') {
+    const active = !!(t && !t.paused);
+    mediaHtml = renderCoachAvatar(active);
+  } else {
+    const vc = renderVideoControl(key, item.name, '▶ Demo Video');
+    videoButtonHtml = vc.button;
+    mediaHtml = vc.area;
+  }
 
   let rightHtml = '';
   if (t) {
@@ -999,9 +1009,9 @@ function renderSessionTimerCurrent(entry, key, idx, badge) {
     <div class="session-item-controls">
       ${t ? `<button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>` : ''}
       <button class="btn-skip" data-skip-index="${idx}">Skip</button>
-      ${vc.button}
+      ${videoButtonHtml}
     </div>
-    ${vc.area}`;
+    ${mediaHtml}`;
 }
 
 function renderSetFlow(ex, key, idx, totalSets) {
@@ -1406,6 +1416,7 @@ function attachListeners() {
 
   document.querySelectorAll('[data-media-mode]').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (btn.dataset.mediaMode === STATE.mediaMode) return;
       STATE.mediaMode = btn.dataset.mediaMode;
       render();
     });
