@@ -3,17 +3,19 @@
 // The GEMINI_API_KEY is read from environment variables (set in Vercel dashboard,
 // never committed to the repo, never exposed to the browser).
 
-// A plan is only returned to the client if EVERY day is complete:
-// non-empty warmup/exercises/cooldown. Partial plans are never returned.
+// A plan is only returned to the client if EVERY day has realistic volume:
+// warmup >= 5 items (4 dynamic movements + 1 cardio block), exercises >= 6 items
+// (5 lifts + 1 finishing cardio block), cooldown >= 3 static stretches.
+// Partial or thin plans are never returned.
 // (Meal ideas moved to the lazy /api/meal-ideas endpoint to keep this call small.)
 export function validatePlan(parsed) {
   if (!parsed || !Array.isArray(parsed.week) || parsed.week.length === 0) return false;
   return parsed.week.every(
     (day) =>
       day &&
-      Array.isArray(day.warmup) && day.warmup.length > 0 &&
-      Array.isArray(day.exercises) && day.exercises.length > 0 &&
-      Array.isArray(day.cooldown) && day.cooldown.length > 0
+      Array.isArray(day.warmup) && day.warmup.length >= 5 &&
+      Array.isArray(day.exercises) && day.exercises.length >= 6 &&
+      Array.isArray(day.cooldown) && day.cooldown.length >= 3
   );
 }
 
@@ -45,10 +47,10 @@ User profile:
 Rules:
 - Create exactly ${days_available} workout days, with sensible rest/recovery between muscle groups
 - Beginner-friendly exercises only if experience_level is beginner; scale difficulty appropriately otherwise
-- Each day has three phases: warmup, exercises (main strength work), and cooldown
-- "warmup": 2-3 items, each with name, duration (e.g. "3 min"), and instructions (exactly 1 short sentence)
-- "exercises": the main strength work. Each item needs: name, sets, reps, suggested_weight (a short beginner-appropriate load suggestion, e.g. "Bodyweight only" or "Start with 2-5 kg dumbbells"), instructions (exactly 1 short sentence that includes any relevant safety guidance — e.g. if injuries are listed, note how to modify or avoid aggravating them), alternative (a substitute exercise name for someone who can't access equipment or has a limitation), and video_search_term (a short phrase usable to search YouTube for a demo)
-- "cooldown": 1-2 items, each with name, duration, and instructions (exactly 1 short sentence)
+- Each day is a realistic ~60 minute session with three phases: warmup, exercises (main strength work), and cooldown
+- "warmup" (total ~12-15 min): at least 4 dynamic movements (e.g. arm circles, bodyweight squats, high knees, dynamic lunges), each with duration 1-2 min, PLUS 1 separate cardio machine block of 8-10 min (e.g. "Cycling" or "Cross Trainer / Elliptical"). That means 5+ warmup items total. Each item has name, duration (e.g. "2 min"), and instructions (exactly 1 short sentence)
+- "exercises" (the main strength work, total ~40 min): at least 5 strength exercises, PLUS 1 finishing cardio block of 8-10 min as the LAST item (e.g. "Treadmill — always on incline" or "Stair climber"). That means 6+ exercise items total. Each item needs: name, sets, reps, suggested_weight (a short beginner-appropriate load suggestion, e.g. "Bodyweight only" or "Start with 2-5 kg dumbbells"), instructions (exactly 1 short sentence that includes any relevant safety guidance — e.g. if injuries are listed, note how to modify or avoid aggravating them), alternative (a substitute exercise name for someone who can't access equipment or has a limitation), and video_search_term (a short phrase usable to search YouTube for a demo). For the finishing cardio block, use sensible values (e.g. sets 1, reps "8-10 min") and still fill every field
+- "cooldown" (total ~5 min): at least 3 static stretches (e.g. child's pose, hamstring stretch, chest stretch), each with duration 1-2 min. That means 3+ cooldown items. Each has name, duration, and instructions (exactly 1 short sentence)
 - If injuries are listed, exclude contraindicated movements entirely and fold any relevant safety guidance into the "instructions" field of affected items — do not use a separate safety field
 - Include one short, practical diet_tip per day (not a full meal plan)
 - Be concise everywhere. Do not add extra explanation, elaboration, or commentary beyond what's requested — every field should be as short as possible while staying useful.
@@ -60,7 +62,7 @@ Rules:
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 2500,
+      maxOutputTokens: 3500,
       responseMimeType: 'application/json',
     },
   });
