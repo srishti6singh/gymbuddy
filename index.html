@@ -270,6 +270,30 @@
   }
   .toast-banner.show { opacity: 1; transform: translate(-50%, 0); }
 
+  /* Home header profile button */
+  .profile-btn {
+    min-width: var(--tap-target-sm); min-height: var(--tap-target-sm); flex-shrink: 0;
+    background: var(--bg-surface); border: 1.5px solid #333; border-radius: 50%;
+    font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* "This week" insights strip — pure CSS, no chart library */
+  .insights-row { display: flex; gap: 8px; margin-top: 12px; }
+  .insights-cell { flex: 1; background: var(--bg-surface); border-radius: 10px; padding: 10px 8px; text-align: center; }
+  .insights-value { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 800; color: var(--accent-primary); }
+  .insights-label { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); margin-top: 3px; }
+  .insights-dots { display: flex; gap: 5px; justify-content: center; align-items: center; min-height: 19px; }
+  .week-dot { width: 9px; height: 9px; border-radius: 50%; background: none; border: 1.5px solid #3A3A3A; }
+  .week-dot.filled { background: var(--accent-primary); border-color: var(--accent-primary); }
+
+  .adaptation-note { font-size: 12px; color: var(--accent-primary); margin: 6px 0 10px; line-height: 1.4; }
+
+  /* Profile page rows */
+  .profile-row { margin-top: 14px; }
+  .profile-row-static { display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+  .profile-static-label { font-size: 13px; color: var(--text-secondary); }
+  .profile-static-value { font-size: 14px; font-weight: 700; }
+
   /* BMI goal-mismatch suggestion card — informational, never blocking. */
   .bmi-card { background: rgba(255,193,7,0.07); border: 1.5px solid var(--accent-warn); border-radius: 12px; padding: 14px; margin-top: 18px; }
   .bmi-card-title { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; color: var(--accent-warn); }
@@ -297,6 +321,10 @@ const STORAGE_KEYS = {
   workLog: 'gymbuddy_work_log',
   lastDaySummary: 'gymbuddy_last_day_summary',
   usingFallback: 'gymbuddy_using_fallback',
+  weekNumber: 'gymbuddy_week_number',
+  weekLog: 'gymbuddy_week_log',
+  history: 'gymbuddy_history',
+  dietPref: 'gymbuddy_diet_pref',
 };
 
 const REST_SECONDS = 45;      // rest between sets (NASM: 30-60s for bodyweight work)
@@ -591,6 +619,46 @@ const FALLBACK_RECIPE = {
 
 const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
 
+// The API path enforces dietary preferences via the prompt; the offline
+// fallbacks must comply too, so non-compliant dishes get swapped for safe
+// ones and the dal recipe drops ghee/egg/curd mentions as needed.
+const DIET_EXCLUDES = {
+  vegetarian: /egg|chicken|fish|mutton/i,
+  vegan: /egg|chicken|fish|mutton|curd|paneer|milk|ghee|butter/i,
+  lactose_free: /curd|paneer|milk|cheese|butter/i,
+};
+const DIET_SAFE_IDEAS = {
+  Breakfast: ['Peanut Vegetable Upma', 'Besan Chilla'],
+  Lunch: ['Chole with Rice', 'Veg Khichdi with Salad'],
+  Dinner: ['Veg Pulao with Salad', 'Dal with Jeera Rice'],
+  Snack: ['Roasted Makhana', 'Fruit with Peanut Butter'],
+};
+function dietCompliantMeals(meals, mealType, pref) {
+  const exclude = DIET_EXCLUDES[pref];
+  if (!exclude) return meals;
+  const pool = DIET_SAFE_IDEAS[mealType] || DIET_SAFE_IDEAS.Snack;
+  let next = 0;
+  return {
+    ideas: meals.ideas.map((idea) => (exclude.test(idea) ? pool[next++ % pool.length] : idea)),
+    cravingSwaps: meals.cravingSwaps.filter((s) => !exclude.test(s)),
+  };
+}
+function dietCompliantRecipe(pref) {
+  const r = deepCopy(FALLBACK_RECIPE);
+  const noDairy = pref === 'vegan' || pref === 'lactose_free';
+  const noEgg = pref === 'vegan' || pref === 'vegetarian';
+  if (noDairy) {
+    r.steps = r.steps.map((s) => s.replace('ghee or oil', 'oil'));
+    r.ingredients = r.ingredients.map((i) => (i.name.indexOf('Ghee') === 0 ? { name: 'Oil (1 tsp)', alternative: 'any cooking oil' } : i));
+  }
+  if (noEgg || noDairy) {
+    const protein = pref === 'vegan' ? 'roasted peanuts' : noEgg ? 'a bowl of curd' : 'a boiled egg';
+    r.steps = r.steps.map((s) => s.replace('a boiled egg or bowl of curd', protein));
+    r.ingredients = r.ingredients.map((i) => (i.name.indexOf('Rice or rotis') === 0 ? { name: i.name, alternative: protein + ' for extra protein' } : i));
+  }
+  return r;
+}
+
 // ---------- Persistence load (runs before first render) ----------
 // Safe reads: a blocked localStorage or one corrupted key must never kill the
 // whole script (which would otherwise silently reset the app to the name screen).
@@ -646,6 +714,11 @@ const STATE = {
   lastDaySummary: readStoredJSON(STORAGE_KEYS.lastDaySummary, null),
   streak: parseInt(readStored(STORAGE_KEYS.streak) || '0', 10),
   usingFallback: readStored(STORAGE_KEYS.usingFallback) === '1',
+  weekNumber: parseInt(readStored(STORAGE_KEYS.weekNumber) || '1', 10),
+  weekLog: readStoredJSON(STORAGE_KEYS.weekLog, []),
+  history: readStoredJSON(STORAGE_KEYS.history, []),
+  dietPref: readStored(STORAGE_KEYS.dietPref),
+  weekReview: null,
   bmiSuggest: null,
   bmiPromptResolved: false,
   loading: false,
@@ -989,6 +1062,30 @@ function computeDayCalories() {
   };
 }
 
+// Totals for the current week: archived day records plus whatever the
+// in-progress day has logged so far. Used by the insights strip and review.
+function computeWeekStats() {
+  const total = STATE.plan && Array.isArray(STATE.plan.week) ? STATE.plan.week.length : 0;
+  const completed = Object.keys(STATE.dayProgress).filter((k) => STATE.dayProgress[k]).length;
+  let activeMinutes = 0;
+  let kcal = 0;
+  STATE.weekLog.forEach((d) => { activeMinutes += d.activeMinutes || 0; kcal += d.kcal || 0; });
+  if (Object.keys(STATE.workLog).length) {
+    const live = computeDayCalories();
+    activeMinutes += live.activeMinutes;
+    kcal += live.kcal;
+  }
+  return { completed, total, activeMinutes, kcal };
+}
+
+function bmiCategory(bmi) {
+  if (bmi === null) return '';
+  if (bmi < 18.5) return 'Underweight';
+  if (bmi < 25) return 'Healthy range';
+  if (bmi < 30) return 'Overweight';
+  return 'Obese range';
+}
+
 function fireConfetti(big) {
   if (typeof confetti !== 'function') return;
   if (big) {
@@ -1006,6 +1103,10 @@ function completeActiveDay() {
   const summary = computeDayCalories();
   STATE.lastDaySummary = { dayIndex: dIdx, kcal: summary.kcal, activeMinutes: summary.activeMinutes, previewDismissed: false };
   writeStored(STORAGE_KEYS.lastDaySummary, JSON.stringify(STATE.lastDaySummary));
+  // Per-day record for the week: feeds the home insights strip and the
+  // week-end review stats, and gets archived into history at week rollover.
+  STATE.weekLog.push({ dayIndex: dIdx, kcal: summary.kcal, activeMinutes: summary.activeMinutes });
+  writeStored(STORAGE_KEYS.weekLog, JSON.stringify(STATE.weekLog));
   STATE.dayProgress[dIdx] = true;
   writeStored(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
   resetDayScopedState();
@@ -1031,7 +1132,7 @@ async function fetchMealIdeas(mealType) {
     const response = await fetch('/api/meal-ideas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mealType, goal: STATE.onboarding.goal }),
+      body: JSON.stringify({ mealType, goal: STATE.onboarding.goal, dietPref: STATE.dietPref }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'empty meal response');
@@ -1040,7 +1141,7 @@ async function fetchMealIdeas(mealType) {
     // API unavailable → serve the hardcoded Indian budget-friendly ideas
     // instead of an error; the UI renders them exactly like API results.
     console.log('[gymbuddy] meal-ideas API unavailable (' + err.message + ') — using built-in ' + mealType + ' ideas');
-    STATE.mealIdeas[mealType] = deepCopy(FALLBACK_MEALS[mealType] || FALLBACK_MEALS.Snack);
+    STATE.mealIdeas[mealType] = dietCompliantMeals(deepCopy(FALLBACK_MEALS[mealType] || FALLBACK_MEALS.Snack), mealType, STATE.dietPref);
   } finally {
     STATE.mealIdeasLoading[mealType] = false;
     render();
@@ -1056,7 +1157,7 @@ async function fetchRecipe(mealName) {
     const response = await fetch('/api/recipe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mealName }),
+      body: JSON.stringify({ mealName, dietPref: STATE.dietPref }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'empty recipe response');
@@ -1064,7 +1165,7 @@ async function fetchRecipe(mealName) {
   } catch (err) {
     // API unavailable → serve the dependable built-in dal recipe instead.
     console.log('[gymbuddy] recipe API unavailable (' + err.message + ') — using built-in recipe');
-    STATE.recipes[mealName] = deepCopy(FALLBACK_RECIPE);
+    STATE.recipes[mealName] = dietCompliantRecipe(STATE.dietPref);
   } finally {
     STATE.recipeLoading[mealName] = false;
     render();
@@ -1185,6 +1286,7 @@ function render() {
   else if (STATE.screen === 'loading') frame.innerHTML = renderLoading();
   else if (STATE.screen === 'planRefresh') frame.innerHTML = renderPlanRefresh();
   else if (STATE.screen === 'home') frame.innerHTML = renderHome();
+  else if (STATE.screen === 'profilePage') frame.innerHTML = renderProfilePage();
   else if (STATE.screen === 'session') frame.innerHTML = renderSession();
   else if (STATE.screen === 'summary') frame.innerHTML = renderSummary();
   attachListeners();
@@ -1376,14 +1478,8 @@ function renderHome() {
   const dIdx = getActiveDayIndex();
 
   if (dIdx >= week.length) {
-    return `
-      <div class="screen active" style="justify-content:center; text-align:center;">
-        <div style="font-size:56px;">🎉</div>
-        <h1 style="margin-top:12px;">Week complete!</h1>
-        <p class="text-secondary" style="margin-top:8px;">You finished every day in this week's plan. Nice work, ${escapeHtml(STATE.name)}.</p>
-        <div class="progress-card-sub" style="margin-top:16px;">🔥 ${STATE.streak}-day streak</div>
-        <button class="btn-ghost" id="restartBtn" style="margin-top:24px;">Start over with new answers</button>
-      </div>`;
+    // Every day done → week-end check-in instead of a static celebration.
+    return renderWeekReview();
   }
 
   const day = week[dIdx];
@@ -1403,18 +1499,234 @@ function renderHome() {
       </div>`;
   }
 
+  const stats = computeWeekStats();
+  const dotsHtml = week.map((_, i) => `<span class="week-dot ${STATE.dayProgress[i] ? 'filled' : ''}"></span>`).join('');
+
   return `
     <div class="screen active">
-      <div class="eyebrow">Today</div>
-      <h1 style="font-size:22px;">Nice to have you, ${escapeHtml(STATE.name)}.</h1>
-      <div class="progress-card-sub" style="margin-top:6px;">🔥 ${STATE.streak}-day streak · Day ${dIdx + 1} of ${week.length}</div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+        <div>
+          <div class="eyebrow">Today</div>
+          <h1 style="font-size:22px;">Nice to have you, ${escapeHtml(STATE.name)}.</h1>
+        </div>
+        <button class="profile-btn" id="profileBtn" aria-label="Profile">👤</button>
+      </div>
+      <div class="progress-card-sub" style="margin-top:6px;">🔥 ${STATE.streak}-day streak · Week ${STATE.weekNumber} · Day ${dIdx + 1} of ${week.length}</div>
+      <div class="insights-row">
+        <div class="insights-cell"><div class="insights-dots">${dotsHtml}</div><div class="insights-label">${stats.completed}/${stats.total} days</div></div>
+        <div class="insights-cell"><div class="insights-value">${stats.activeMinutes}</div><div class="insights-label">active min</div></div>
+        <div class="insights-cell"><div class="insights-value">~${stats.kcal}</div><div class="insights-label">kcal</div></div>
+      </div>
       <div class="day-card">
         <div class="day-title">Day ${dIdx + 1} — ${escapeHtml(day.focus)}</div>
         <div class="day-focus">${warmupCount} warmup, ${exerciseCount} exercises, ${cooldownCount} cooldown</div>
+        ${day.adaptation_note ? `<div class="adaptation-note">✨ ${escapeHtml(day.adaptation_note)}</div>` : ''}
         <button class="btn-primary" id="startDayBtn">Start Day</button>
       </div>
       <button class="btn-ghost" id="restartBtn">Start over with new answers</button>
       ${previewSheetHtml}
+    </div>`;
+}
+
+// ---------- Week-end review + adaptive next week ----------
+
+function goalLabel(goal) {
+  return ({ general_fitness: 'General fitness', lose_weight: 'Lose weight', build_muscle: 'Build muscle', get_stronger: 'Get stronger' })[goal] || 'General fitness';
+}
+
+function renderWeekReview() {
+  if (!STATE.weekReview) {
+    STATE.weekReview = { weight: STATE.onboarding.weight || '', feedback: null, feedbackText: '', goal: STATE.onboarding.goal || 'general_fitness' };
+  }
+  const rv = STATE.weekReview;
+  const stats = computeWeekStats();
+  const feels = [
+    { value: 'too_easy', label: 'Too easy' },
+    { value: 'just_right', label: 'Just right' },
+    { value: 'tough_but_doable', label: 'Tough but doable' },
+    { value: 'too_hard', label: 'Too hard' },
+  ];
+  const goals = [
+    { value: 'general_fitness', label: '⚡ General fitness' },
+    { value: 'lose_weight', label: '🔥 Lose weight' },
+    { value: 'build_muscle', label: '💪 Build muscle' },
+    { value: 'get_stronger', label: '🏋️ Get stronger' },
+  ];
+
+  return `
+    <div class="screen active">
+      <div style="text-align:center;">
+        <div style="font-size:48px;">🎉</div>
+        <h1 style="margin-top:6px;">Week ${STATE.weekNumber} done!</h1>
+      </div>
+      <div class="insights-row">
+        <div class="insights-cell"><div class="insights-value">${stats.completed}/${stats.total}</div><div class="insights-label">days done</div></div>
+        <div class="insights-cell"><div class="insights-value">${stats.activeMinutes}</div><div class="insights-label">active min</div></div>
+        <div class="insights-cell"><div class="insights-value">~${stats.kcal}</div><div class="insights-label">kcal</div></div>
+      </div>
+      <div class="phase-label" style="margin-top:18px;">Update your weight (kg)</div>
+      <div class="weight-input-wrap">
+        <input id="reviewWeightInput" class="weight-input" type="number" inputmode="decimal" min="20" max="300" step="0.5" value="${escapeHtml(rv.weight)}" />
+        <span class="weight-unit">kg</span>
+      </div>
+      <div class="phase-label" style="margin-top:16px;">How did the week feel?</div>
+      <div class="meal-chips">${feels.map((f) => `<button class="meal-chip ${rv.feedback === f.value ? 'selected' : ''}" data-review-feel="${f.value}">${f.label}</button>`).join('')}</div>
+      <div class="phase-label" style="margin-top:16px;">Anything to change?</div>
+      <textarea id="reviewTextInput" class="injuries-input" style="min-height:64px;" placeholder="optional — e.g. more core work, shorter cardio">${escapeHtml(rv.feedbackText)}</textarea>
+      <div class="phase-label" style="margin-top:16px;">Keep goal (${goalLabel(rv.goal)}) or switch?</div>
+      <div class="meal-chips">${goals.map((g) => `<button class="meal-chip ${rv.goal === g.value ? 'selected' : ''}" data-review-goal="${g.value}">${g.label}</button>`).join('')}</div>
+      <button class="btn-primary" id="generateNextWeekBtn" style="margin-top:20px;" ${isValidWeight(rv.weight) ? '' : 'disabled'}>Generate Week ${STATE.weekNumber + 1}</button>
+    </div>`;
+}
+
+// Roll the program forward one week: archive the finished week, bump the
+// counter, and install the new plan (API or fallback) via the normal path.
+function adoptNextWeek(week, { fallback }) {
+  const stats = computeWeekStats();
+  STATE.history.push({
+    week: STATE.weekNumber,
+    completedDays: stats.completed,
+    totalDays: stats.total,
+    activeMinutes: stats.activeMinutes,
+    kcal: stats.kcal,
+    feedback: STATE.weekReview ? STATE.weekReview.feedback : null,
+    weekLog: STATE.weekLog,
+    endedAt: new Date().toISOString().slice(0, 10),
+  });
+  writeStored(STORAGE_KEYS.history, JSON.stringify(STATE.history));
+  STATE.weekNumber += 1;
+  writeStored(STORAGE_KEYS.weekNumber, String(STATE.weekNumber));
+  STATE.weekLog = [];
+  writeStored(STORAGE_KEYS.weekLog, JSON.stringify(STATE.weekLog));
+  STATE.weekReview = null;
+  adoptPlan(week, { fallback }); // resets dayProgress/sequenceProgress/lastDaySummary
+}
+
+async function generateNextWeek() {
+  const rv = STATE.weekReview || {};
+  const stats = computeWeekStats();
+  const previousWeight = STATE.onboarding.weight;
+
+  // Commit the check-in answers to the profile before generating.
+  if (isValidWeight(rv.weight)) STATE.onboarding.weight = rv.weight;
+  if (rv.goal) STATE.onboarding.goal = rv.goal;
+  writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+
+  const previousWeekSummary = {
+    completionRate: stats.total ? Math.round((stats.completed / stats.total) * 100) : 0,
+    feedback: rv.feedback || 'just_right',
+    feedbackText: rv.feedbackText || '',
+    weightChange: { from: previousWeight, to: STATE.onboarding.weight },
+    newGoal: STATE.onboarding.goal,
+  };
+
+  STATE.screen = 'loading';
+  render();
+  startLoadingFacts();
+
+  try {
+    const response = await fetch('/api/next-week', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ onboarding: STATE.onboarding, previousWeekSummary, weekNumber: STATE.weekNumber + 1 }),
+    });
+    const data = await response.json();
+    if (!response.ok || !Array.isArray(data.week) || data.week.length === 0) {
+      throw new Error(data.error || 'empty plan response');
+    }
+    adoptNextWeek(data.week, { fallback: false });
+    stopLoadingFacts();
+    STATE.screen = 'home';
+    render();
+  } catch (err) {
+    // Same promise as week 1: adapt with what we have, never an error screen.
+    stopLoadingFacts();
+    const goalKey = FALLBACK_PLANS[STATE.onboarding.goal] ? STATE.onboarding.goal : 'general_fitness';
+    console.log('[gymbuddy] next-week API unavailable (' + err.message + ') — using starter plan:', goalKey);
+    adoptNextWeek(deepCopy(FALLBACK_PLANS[goalKey].week), { fallback: true });
+    STATE.screen = 'home';
+    render();
+    showToast('Using a starter plan for this week — a personalized one will sync when connection improves');
+  }
+}
+
+// ---------- Profile page ----------
+
+const DIET_PREFS = [
+  { value: 'vegetarian', label: '🥦 Vegetarian' },
+  { value: 'vegan', label: '🌱 Vegan' },
+  { value: 'lactose_free', label: '🥛 Lactose-free' },
+  { value: 'eggetarian', label: '🥚 Eggetarian' },
+  { value: 'none', label: '🍽 None' },
+];
+
+function dietPrefLabel(pref) {
+  const found = DIET_PREFS.find((p) => p.value === pref);
+  return found ? found.label.replace(/^\S+\s/, '') : 'Not set';
+}
+
+function renderProfilePage() {
+  const ob = STATE.onboarding;
+  const bmi = computeBMI(ob);
+  const goals = [
+    { value: 'general_fitness', label: '⚡ General fitness' },
+    { value: 'lose_weight', label: '🔥 Lose weight' },
+    { value: 'build_muscle', label: '💪 Build muscle' },
+    { value: 'get_stronger', label: '🏋️ Get stronger' },
+  ];
+
+  return `
+    <div class="screen active">
+      <div class="eyebrow">Profile</div>
+      <h1 style="font-size:22px;">👤 ${escapeHtml(STATE.name || 'You')}</h1>
+
+      <div class="profile-row">
+        <div class="phase-label">Name</div>
+        <div class="weight-input-wrap"><input id="profileNameInput" class="weight-input" type="text" maxlength="30" value="${escapeHtml(STATE.name)}" /></div>
+      </div>
+
+      <div class="profile-row">
+        <div class="phase-label">Weight & height</div>
+        <div class="weight-input-wrap">
+          <input id="profileWeightInput" class="weight-input" type="number" inputmode="decimal" min="20" max="300" step="0.5" value="${escapeHtml(ob.weight || '')}" />
+          <span class="weight-unit">kg</span>
+        </div>
+        <div class="weight-input-wrap" style="margin-top:8px;">
+          <input id="profileHeightInput" class="weight-input" type="number" inputmode="decimal" min="100" max="250" step="1" placeholder="165" value="${escapeHtml(ob.height || '')}" />
+          <span class="weight-unit">cm</span>
+        </div>
+      </div>
+
+      <div class="profile-row-static">
+        <span class="profile-static-label">BMI</span>
+        <span class="profile-static-value" id="profileBmiValue">${bmi === null ? '—' : bmi + ' · ' + bmiCategory(bmi)}</span>
+      </div>
+
+      <div class="profile-row">
+        <div class="phase-label">Goal</div>
+        <div class="meal-chips">${goals.map((g) => `<button class="meal-chip ${ob.goal === g.value ? 'selected' : ''}" data-profile-goal="${g.value}">${g.label}</button>`).join('')}</div>
+      </div>
+
+      <div class="profile-row">
+        <div class="phase-label">Injuries / limitations</div>
+        <textarea id="profileInjuriesInput" class="injuries-input" style="min-height:56px;" placeholder="none">${escapeHtml(ob.injuries || '')}</textarea>
+      </div>
+
+      <div class="profile-row">
+        <div class="phase-label">Dietary preference</div>
+        <div class="meal-chips">${DIET_PREFS.map((p) => `<button class="meal-chip ${STATE.dietPref === p.value ? 'selected' : ''}" data-diet-value="${p.value}">${p.label}</button>`).join('')}</div>
+      </div>
+
+      <div class="profile-row-static">
+        <span class="profile-static-label">Current week</span>
+        <span class="profile-static-value">Week ${STATE.weekNumber}</span>
+      </div>
+      <div class="profile-row-static">
+        <span class="profile-static-label">Streak</span>
+        <span class="profile-static-value">🔥 ${STATE.streak} days</span>
+      </div>
+
+      <button class="btn-primary" id="profileBackBtn" style="margin-top:20px;">Back</button>
     </div>`;
 }
 
@@ -1733,7 +2045,13 @@ function renderSummary() {
 
   let mealSectionHtml = '';
   let cravingsHtml = '';
-  if (STATE.nextMeal) {
+  if (STATE.nextMeal && STATE.dietPref === null) {
+    // One-time ask before the first meal fetch; persists and becomes
+    // editable from the Profile page afterwards.
+    mealSectionHtml = `
+      <div class="phase-label" style="margin-top:14px;">Any dietary preferences?</div>
+      <div class="meal-chips">${DIET_PREFS.map((p) => `<button class="meal-chip" data-diet-value="${p.value}">${p.label}</button>`).join('')}</div>`;
+  } else if (STATE.nextMeal) {
     const m = STATE.nextMeal;
     if (STATE.mealIdeasLoading[m]) {
       mealSectionHtml = `<div class="video-loading" style="margin-top:12px;">Getting ${escapeHtml(m)} ideas…</div>`;
@@ -2005,9 +2323,103 @@ function attachListeners() {
     btn.addEventListener('click', guardTap(() => {
       STATE.nextMeal = btn.dataset.meal;
       render();
-      fetchMealIdeas(btn.dataset.meal);
+      // First-ever meal tap: ask dietary preference before fetching —
+      // the diet chip that gets tapped will trigger the fetch instead.
+      if (STATE.dietPref !== null) fetchMealIdeas(btn.dataset.meal);
     }));
   });
+
+  // Diet preference chips (summary one-time prompt + profile page).
+  document.querySelectorAll('[data-diet-value]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      STATE.dietPref = btn.dataset.dietValue;
+      writeStored(STORAGE_KEYS.dietPref, STATE.dietPref);
+      render();
+      if (STATE.screen === 'summary' && STATE.nextMeal && !STATE.mealIdeas[STATE.nextMeal]) {
+        fetchMealIdeas(STATE.nextMeal);
+      }
+    });
+  });
+
+  // ---- Profile page ----
+  const profileOpenBtn = document.getElementById('profileBtn');
+  if (profileOpenBtn) profileOpenBtn.addEventListener('click', () => { STATE.screen = 'profilePage'; render(); });
+
+  const profileBackBtn = document.getElementById('profileBackBtn');
+  if (profileBackBtn) profileBackBtn.addEventListener('click', () => { STATE.screen = 'home'; render(); });
+
+  const profileNameInput = document.getElementById('profileNameInput');
+  if (profileNameInput) profileNameInput.addEventListener('input', () => {
+    STATE.name = profileNameInput.value.trim() || 'there';
+    writeStored(STORAGE_KEYS.name, STATE.name);
+  });
+
+  // Weight/height edits persist on every keystroke and recompute the BMI row
+  // in place (no full render, so the input keeps focus).
+  const syncProfileBmi = () => {
+    const el = document.getElementById('profileBmiValue');
+    if (!el) return;
+    const bmi = computeBMI(STATE.onboarding);
+    el.textContent = bmi === null ? '—' : bmi + ' · ' + bmiCategory(bmi);
+  };
+  const profileWeightInput = document.getElementById('profileWeightInput');
+  if (profileWeightInput) profileWeightInput.addEventListener('input', () => {
+    if (profileWeightInput.value !== '' && !isValidWeight(profileWeightInput.value)) return;
+    STATE.onboarding.weight = profileWeightInput.value;
+    writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+    syncProfileBmi();
+  });
+  const profileHeightInput = document.getElementById('profileHeightInput');
+  if (profileHeightInput) profileHeightInput.addEventListener('input', () => {
+    if (!isValidHeight(profileHeightInput.value)) return;
+    STATE.onboarding.height = profileHeightInput.value;
+    writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+    syncProfileBmi();
+  });
+
+  const profileInjuriesInput = document.getElementById('profileInjuriesInput');
+  if (profileInjuriesInput) profileInjuriesInput.addEventListener('input', () => {
+    STATE.onboarding.injuries = profileInjuriesInput.value;
+    writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+  });
+
+  document.querySelectorAll('[data-profile-goal]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      STATE.onboarding.goal = btn.dataset.profileGoal;
+      writeStored(STORAGE_KEYS.onboarding, JSON.stringify(STATE.onboarding));
+      render();
+    });
+  });
+
+  // ---- Week-end review ----
+  const reviewWeightInput = document.getElementById('reviewWeightInput');
+  if (reviewWeightInput) reviewWeightInput.addEventListener('input', () => {
+    STATE.weekReview.weight = reviewWeightInput.value;
+    const btn = document.getElementById('generateNextWeekBtn');
+    if (btn) btn.disabled = !isValidWeight(reviewWeightInput.value);
+  });
+
+  const reviewTextInput = document.getElementById('reviewTextInput');
+  if (reviewTextInput) reviewTextInput.addEventListener('input', () => {
+    STATE.weekReview.feedbackText = reviewTextInput.value;
+  });
+
+  document.querySelectorAll('[data-review-feel]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      STATE.weekReview.feedback = btn.dataset.reviewFeel;
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-review-goal]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      STATE.weekReview.goal = btn.dataset.reviewGoal;
+      render();
+    });
+  });
+
+  const generateNextWeekBtn = document.getElementById('generateNextWeekBtn');
+  if (generateNextWeekBtn) generateNextWeekBtn.addEventListener('click', guardTap(generateNextWeek));
 
   document.querySelectorAll('[data-recipe-for]').forEach((btn) => {
     btn.addEventListener('click', guardTap(() => toggleMealExpand(btn.dataset.recipeFor, 'recipe')));
@@ -2031,6 +2443,8 @@ function attachListeners() {
     removeStored(STORAGE_KEYS.workLog);
     removeStored(STORAGE_KEYS.onboarding);
     removeStored(STORAGE_KEYS.lastDaySummary);
+    removeStored(STORAGE_KEYS.weekNumber);
+    removeStored(STORAGE_KEYS.weekLog);
     STATE.plan = null;
     STATE.dayProgress = {};
     STATE.lastDaySummary = null;
@@ -2038,6 +2452,11 @@ function attachListeners() {
     STATE.onboarding = { experience_level: null, days_available: null, goal: null, injuries: '', weight: null, height: null };
     STATE.bmiSuggest = null;
     STATE.bmiPromptResolved = false;
+    // Fresh program: back to week 1 with an empty week log. History and the
+    // dietary preference are user-level and survive a restart.
+    STATE.weekNumber = 1;
+    STATE.weekLog = [];
+    STATE.weekReview = null;
     STATE.screen = 'experience';
     render();
   });
@@ -2117,6 +2536,9 @@ async function generatePlan() {
 async function silentPlanRefresh() {
   const ob = STATE.onboarding || {};
   if (!ob.experience_level || !ob.days_available || !ob.goal) return;
+  // Week 2+ fallbacks stay put: regenerating via /api/generate-plan would
+  // produce a week-1 plan and silently discard the adaptive context.
+  if (STATE.weekNumber > 1) return;
   const untouched = () =>
     Object.keys(STATE.sequenceProgress).length === 0 && Object.keys(STATE.dayProgress).length === 0;
   if (!untouched()) return;

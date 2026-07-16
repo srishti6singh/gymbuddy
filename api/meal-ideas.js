@@ -27,15 +27,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server misconfigured: missing API key' });
   }
 
-  const { mealType, goal } = req.body || {};
+  const { mealType, goal, dietPref } = req.body || {};
   if (!mealType || typeof mealType !== 'string') {
     return res.status(400).json({ error: 'Missing mealType' });
   }
 
   const goalText = goal ? String(goal).replace(/_/g, ' ').slice(0, 40) : 'general fitness';
+  const DIET_LABELS = { vegetarian: 'vegetarian', vegan: 'vegan', lactose_free: 'lactose-free', eggetarian: 'eggetarian (vegetarian + eggs)' };
+  const dietLine = DIET_LABELS[dietPref] ? `\n- User is ${DIET_LABELS[dietPref]} — all suggestions must comply` : '';
   const prompt = `Suggest exactly 3 healthy ${String(mealType).slice(0, 20)} ideas for a budget-conscious gym beginner in India whose fitness goal is ${goalText}.
 
-Rules:
+Rules:${dietLine}
 - Easy to make in a typical Indian home kitchen, high-protein where possible
 - Each idea is a short dish name under 6 words (e.g. "Paneer bhurji with roti")
 - Also give exactly 2 healthy swaps for common cravings (sweets, fried snacks), each under 8 words

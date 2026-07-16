@@ -27,15 +27,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server misconfigured: missing API key' });
   }
 
-  const { mealName } = req.body || {};
+  const { mealName, dietPref } = req.body || {};
   if (!mealName || typeof mealName !== 'string' || !mealName.trim()) {
     return res.status(400).json({ error: 'Missing mealName' });
   }
 
   const safeMealName = mealName.replace(/[\r\n]+/g, ' ').slice(0, 80);
+  const DIET_LABELS = { vegetarian: 'vegetarian', vegan: 'vegan', lactose_free: 'lactose-free', eggetarian: 'eggetarian (vegetarian + eggs)' };
+  const dietLine = DIET_LABELS[dietPref] ? `\n- User is ${DIET_LABELS[dietPref]} — the recipe and all substitutes must comply` : '';
   const prompt = `Give a simple beginner recipe for "${safeMealName}" made in a typical Indian home kitchen.
 
-Rules:
+Rules:${dietLine}
 - 4-6 steps, each exactly 1 short sentence
 - List the ingredients; for each, "alternative" is an easy Indian-kitchen substitute or common local alias (e.g. asafoetida → "hing", curd → "homemade curd, water drained"). Use "" if none needed.
 - Keep everything concise
