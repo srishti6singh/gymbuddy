@@ -30,10 +30,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server misconfigured: missing API key' });
   }
 
-  const { experience_level, days_available, goal, injuries } = req.body || {};
+  const { experience_level, days_available, goal, injuries: rawInjuries } = req.body || {};
 
   if (!experience_level || !days_available || !goal) {
     return res.status(400).json({ error: 'Missing required onboarding fields' });
+  }
+
+  // Safety net: a 1-2 char injuries value is almost certainly a typo or
+  // stray keystroke — treat it as "none reported" rather than confusing the model.
+  let injuries = typeof rawInjuries === 'string' ? rawInjuries.trim() : rawInjuries;
+  if (injuries && typeof injuries === 'string' && injuries.length < 3) {
+    injuries = 'none reported';
   }
 
   const prompt = `You are a certified fitness coach creating a beginner-safe weekly workout plan for a budget gym member in India.
@@ -57,7 +64,7 @@ Rules:
 - Output STRICT JSON ONLY. No markdown, no prose, no code fences, no explanations before or after. Keep names and video_search_terms short (under 6 words). Match this exact schema:
 {"week":[{"day":"","focus":"","warmup":[{"name":"","duration":"","instructions":""}],"exercises":[{"name":"","sets":0,"reps":"","suggested_weight":"","instructions":"","alternative":"","video_search_term":""}],"cooldown":[{"name":"","duration":"","instructions":""}],"diet_tip":""}]}`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
@@ -78,7 +85,7 @@ Rules:
     if (remainingMs < 1500) break;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), Math.min(8000, remainingMs));
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(9000, remainingMs));
 
     try {
       const response = await fetch(url, {

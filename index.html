@@ -269,16 +269,38 @@ const FITNESS_FACTS = [
   'Form beats weight: master the movement before adding kilos.',
 ];
 
+// ---------- Persistence load (runs before first render) ----------
+// Safe reads: a blocked localStorage or one corrupted key must never kill the
+// whole script (which would otherwise silently reset the app to the name screen).
+function readStored(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (err) {
+    console.log('[gymbuddy] localStorage read failed for "' + key + '":', err.message);
+    return null;
+  }
+}
+function readStoredJSON(key, fallback) {
+  const raw = readStored(key);
+  if (raw === null) return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    console.log('[gymbuddy] corrupted JSON in "' + key + '" — using fallback:', err.message);
+    return fallback;
+  }
+}
+
 const STATE = {
   screen: 'profile',
-  name: localStorage.getItem(STORAGE_KEYS.name) || '',
-  onboarding: JSON.parse(localStorage.getItem(STORAGE_KEYS.onboarding) || '{"experience_level":null,"days_available":null,"goal":null,"injuries":"","weight":null}'),
-  plan: JSON.parse(localStorage.getItem(STORAGE_KEYS.plan) || 'null'),
-  dayProgress: JSON.parse(localStorage.getItem(STORAGE_KEYS.dayProgress) || '{}'),
-  sequenceProgress: JSON.parse(localStorage.getItem(STORAGE_KEYS.sequenceProgress) || '{}'),
-  workLog: JSON.parse(localStorage.getItem(STORAGE_KEYS.workLog) || '{}'),
-  lastDaySummary: JSON.parse(localStorage.getItem(STORAGE_KEYS.lastDaySummary) || 'null'),
-  streak: parseInt(localStorage.getItem(STORAGE_KEYS.streak) || '0', 10),
+  name: readStored(STORAGE_KEYS.name) || '',
+  onboarding: readStoredJSON(STORAGE_KEYS.onboarding, { experience_level: null, days_available: null, goal: null, injuries: '', weight: null }),
+  plan: readStoredJSON(STORAGE_KEYS.plan, null),
+  dayProgress: readStoredJSON(STORAGE_KEYS.dayProgress, {}),
+  sequenceProgress: readStoredJSON(STORAGE_KEYS.sequenceProgress, {}),
+  workLog: readStoredJSON(STORAGE_KEYS.workLog, {}),
+  lastDaySummary: readStoredJSON(STORAGE_KEYS.lastDaySummary, null),
+  streak: parseInt(readStored(STORAGE_KEYS.streak) || '0', 10),
   loading: false,
   error: null,
   expanded: {},
@@ -764,9 +786,31 @@ async function toggleOrFetchVideo(vKey, searchTerm) {
   }
 }
 
-// If a plan already exists from a previous visit, go home — unless it predates the
-// current schema, in which case route to the friendly regenerate screen.
-if (STATE.plan && STATE.name) STATE.screen = isPlanValid(STATE.plan) ? 'home' : 'planRefresh';
+// ---------- Initial screen routing (runs once, after STATE is populated from storage) ----------
+// Logged to the console so persistence failures can be debugged in the field:
+// which keys survived the reload, which screen was chosen, and why.
+(function routeInitialScreen() {
+  const foundKeys = Object.entries(STORAGE_KEYS)
+    .filter(([, storageKey]) => readStored(storageKey) !== null)
+    .map(([shortName]) => shortName);
+  console.log('[gymbuddy] load: storage keys found →', foundKeys.length ? foundKeys.join(', ') : '(none)');
+
+  if (STATE.name && STATE.plan && isPlanValid(STATE.plan)) {
+    STATE.screen = 'home';
+    console.log('[gymbuddy] load: screen=home (saved name + valid plan)');
+  } else if (STATE.name && STATE.plan) {
+    // Plan exists but fails isPlanValid (usually an old schema_version):
+    // route to the friendly one-tap regenerate screen instead of full onboarding.
+    STATE.screen = 'planRefresh';
+    console.log('[gymbuddy] load: screen=planRefresh (saved name + plan, but plan failed isPlanValid — schema_version is', STATE.plan.schema_version, ', expected', PLAN_SCHEMA_VERSION + ')');
+  } else if (STATE.name) {
+    STATE.screen = 'experience';
+    console.log('[gymbuddy] load: screen=experience (saved name, no saved plan — skipping name entry)');
+  } else {
+    STATE.screen = 'profile';
+    console.log('[gymbuddy] load: screen=profile (no saved name found)');
+  }
+})();
 
 function render() {
   const frame = document.getElementById('phoneFrame');
