@@ -259,6 +259,17 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .error-box { background: rgba(255,80,80,0.1); border: 1px solid #663333; color: #FF8080; padding: 12px; border-radius: 10px; font-size: 13px; margin-top: 10px; }
 
+  /* Gentle informational toast — lives outside the render cycle, auto-dismisses. */
+  .toast-banner {
+    position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px);
+    width: min(340px, calc(100vw - 32px)); background: #14280C;
+    border: 1px solid var(--accent-primary); color: var(--text-primary);
+    padding: 12px 14px; border-radius: 12px; font-size: 12.5px; line-height: 1.45;
+    text-align: center; z-index: 60; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .toast-banner.show { opacity: 1; transform: translate(-50%, 0); }
+
   .btn-ghost { min-height: var(--tap-target-sm); background: none; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; width: 100%; margin-top: 10px; }
 </style>
 </head>
@@ -278,6 +289,7 @@ const STORAGE_KEYS = {
   sequenceProgress: 'gymbuddy_sequence_progress',
   workLog: 'gymbuddy_work_log',
   lastDaySummary: 'gymbuddy_last_day_summary',
+  usingFallback: 'gymbuddy_using_fallback',
 };
 
 const REST_SECONDS = 45;      // rest between sets (NASM: 30-60s for bodyweight work)
@@ -298,6 +310,279 @@ const FITNESS_FACTS = [
   'Mild dehydration often feels like hunger — drink water first.',
   'Form beats weight: master the movement before adding kilos.',
 ];
+
+// ---------- Offline / rate-limit fallbacks ----------
+// Pre-built beginner plans (NASM stabilization-endurance guidelines: full-body
+// days, 10-15 controlled reps, machine/bodyweight bias, core work, cardio
+// bookends). Served instantly when /api/generate-plan is unreachable so the
+// user never sees a failure. Same schema as API plans: warmup 5 items
+// (4 dynamic + 1 cardio), exercises 6 (5 lifts + finishing cardio), cooldown 3.
+const FALLBACK_PLANS = {
+  general_fitness: { week: [
+    {
+      day: "Day 1", focus: "Full Body Foundations",
+      warmup: [
+        { name: "Arm Circles", duration: "1 min", instructions: "Small to large circles, forward then backward, keeping shoulders relaxed." },
+        { name: "Bodyweight Squats", duration: "2 min", instructions: "Slow and controlled, sitting back onto an imaginary chair." },
+        { name: "High Knees (march)", duration: "1 min", instructions: "March in place lifting knees to hip height without bouncing." },
+        { name: "Dynamic Lunges", duration: "2 min", instructions: "Alternate legs with short steps and keep your front knee over your ankle." },
+        { name: "Cycling", duration: "8 min", instructions: "Easy pace on the stationary bike, just enough to break a light sweat." },
+      ],
+      exercises: [
+        { name: "Goblet Squat", sets: 3, reps: "12", suggested_weight: "Start with a 4-6 kg dumbbell", instructions: "Hold the dumbbell at your chest, keep your heels down and squat only as deep as feels comfortable.", alternative: "Leg Press", video_search_term: "goblet squat beginner form" },
+        { name: "Machine Chest Press", sets: 3, reps: "12", suggested_weight: "Start light — around 10-15 kg", instructions: "Press smoothly without locking your elbows and keep your back against the pad.", alternative: "Knee Push-ups", video_search_term: "machine chest press form" },
+        { name: "Lat Pulldown", sets: 3, reps: "12", suggested_weight: "Start around 15-20 kg", instructions: "Pull the bar to your collarbone with a tall chest and avoid leaning far back.", alternative: "Band Assisted Pull-up", video_search_term: "lat pulldown beginner" },
+        { name: "Dumbbell Shoulder Press", sets: 3, reps: "10", suggested_weight: "Start with 2-4 kg dumbbells", instructions: "Press overhead with a tight core and stop if your lower back arches.", alternative: "Seated Machine Shoulder Press", video_search_term: "dumbbell shoulder press seated" },
+        { name: "Plank", sets: 3, reps: "20-30 sec", suggested_weight: "Bodyweight only", instructions: "Keep a straight line from head to heels and breathe steadily throughout.", alternative: "Knee Plank", video_search_term: "plank form beginner" },
+        { name: "Treadmill — always on incline", sets: 1, reps: "10 min", suggested_weight: "Speed 4-5 km/h, incline 6-8%", instructions: "Brisk uphill walk holding the rails only for balance, not support.", alternative: "Stair Climber", video_search_term: "incline treadmill walking" },
+      ],
+      cooldown: [
+        { name: "Child's Pose", duration: "1-2 min", instructions: "Sink your hips to your heels and breathe slowly into your back." },
+        { name: "Standing Hamstring Stretch", duration: "1-2 min", instructions: "Hinge forward with a soft knee until you feel a gentle pull, no bouncing." },
+        { name: "Doorway Chest Stretch", duration: "1 min", instructions: "Rest your forearm on a frame and turn gently away until the chest opens." },
+      ],
+      diet_tip: "Add one protein source to every meal — dal, eggs, curd or paneer all count.",
+    },
+    {
+      day: "Day 2", focus: "Full Body Strength",
+      warmup: [
+        { name: "Shoulder Rolls", duration: "1 min", instructions: "Big slow rolls backward and forward to loosen the upper back." },
+        { name: "Leg Swings", duration: "2 min", instructions: "Hold a rail and swing each leg front-to-back, staying controlled." },
+        { name: "Torso Twists", duration: "1 min", instructions: "Rotate gently side to side with feet planted and arms relaxed." },
+        { name: "Glute Bridges", duration: "2 min", instructions: "Squeeze your glutes at the top and lower down slowly each rep." },
+        { name: "Cross Trainer / Elliptical", duration: "8 min", instructions: "Smooth easy strides with light arm drive to warm the whole body." },
+      ],
+      exercises: [
+        { name: "Dumbbell Romanian Deadlift", sets: 3, reps: "10-12", suggested_weight: "Start with 4-6 kg dumbbells", instructions: "Push your hips back with a flat back and stop when you feel the hamstring stretch.", alternative: "Back Extension", video_search_term: "dumbbell romanian deadlift" },
+        { name: "Seated Cable Row", sets: 3, reps: "12", suggested_weight: "Start around 15-20 kg", instructions: "Pull to your belly button with shoulders down and avoid rocking your torso.", alternative: "Single Arm Dumbbell Row", video_search_term: "seated cable row form" },
+        { name: "Incline Push-up", sets: 3, reps: "10-12", suggested_weight: "Bodyweight only", instructions: "Hands on a bench, body in one straight line, chest to the edge each rep.", alternative: "Machine Chest Press", video_search_term: "incline push up beginner" },
+        { name: "Leg Press", sets: 3, reps: "12", suggested_weight: "Start light — around 30-40 kg", instructions: "Lower under control until knees reach 90 degrees and never lock them out hard.", alternative: "Goblet Squat", video_search_term: "leg press machine beginner" },
+        { name: "Dumbbell Bicep Curl", sets: 3, reps: "12", suggested_weight: "Start with 2-4 kg dumbbells", instructions: "Curl without swinging your elbows and lower slowly for full benefit.", alternative: "Resistance Band Curl", video_search_term: "dumbbell bicep curl form" },
+        { name: "Stair Climber", sets: 1, reps: "8-10 min", suggested_weight: "Slow steady pace", instructions: "Step at a pace where you can still talk, resting hands lightly on the rails.", alternative: "Treadmill — always on incline", video_search_term: "stair climber machine beginner" },
+      ],
+      cooldown: [
+        { name: "Standing Quad Stretch", duration: "1-2 min", instructions: "Pull your heel to your glutes holding support and keep knees together." },
+        { name: "Seated Forward Fold", duration: "1-2 min", instructions: "Reach toward your toes with a long spine and relax into the stretch." },
+        { name: "Cross-body Shoulder Stretch", duration: "1 min", instructions: "Hug one arm across your chest and hold gently on each side." },
+      ],
+      diet_tip: "Drink a glass of water before every meal — thirst often disguises itself as hunger.",
+    },
+    {
+      day: "Day 3", focus: "Full Body & Core",
+      warmup: [
+        { name: "Jumping Jacks (low impact)", duration: "1 min", instructions: "Step side to side with arm raises if jumping feels like too much." },
+        { name: "Cat-Cow Stretch", duration: "2 min", instructions: "Alternate arching and rounding your back slowly with your breath." },
+        { name: "Hip Circles", duration: "1 min", instructions: "Hands on hips, draw big slow circles in both directions." },
+        { name: "Bodyweight Squats", duration: "2 min", instructions: "Smooth tempo squats to wake up the legs before loading them." },
+        { name: "Cycling", duration: "8 min", instructions: "Easy spin with one or two 20-second brisk bursts near the end." },
+      ],
+      exercises: [
+        { name: "Dumbbell Step-up", sets: 3, reps: "10 each leg", suggested_weight: "Bodyweight first, then 2-4 kg dumbbells", instructions: "Step onto a low bench driving through the front heel and control the way down.", alternative: "Leg Press", video_search_term: "dumbbell step up form" },
+        { name: "Single Arm Dumbbell Row", sets: 3, reps: "12 each side", suggested_weight: "Start with 4-6 kg", instructions: "Support yourself on a bench, pull to your hip and keep your back flat.", alternative: "Seated Cable Row", video_search_term: "one arm dumbbell row" },
+        { name: "Dumbbell Floor Press", sets: 3, reps: "12", suggested_weight: "Start with 3-5 kg dumbbells", instructions: "Press up from the floor with wrists stacked over elbows and lower slowly.", alternative: "Machine Chest Press", video_search_term: "dumbbell floor press" },
+        { name: "Glute Bridge", sets: 3, reps: "15", suggested_weight: "Bodyweight only", instructions: "Drive through your heels, squeeze at the top and avoid arching your lower back.", alternative: "Leg Press (light)", video_search_term: "glute bridge form" },
+        { name: "Dead Bug", sets: 3, reps: "10 each side", suggested_weight: "Bodyweight only", instructions: "Lower opposite arm and leg while pressing your lower back into the floor.", alternative: "Knee Plank", video_search_term: "dead bug exercise form" },
+        { name: "Cross Trainer / Elliptical", sets: 1, reps: "10 min", suggested_weight: "Moderate steady pace", instructions: "Finish with a steady rhythm you could hold while humming a song.", alternative: "Treadmill — always on incline", video_search_term: "elliptical workout beginner" },
+      ],
+      cooldown: [
+        { name: "Child's Pose", duration: "1-2 min", instructions: "Knees wide, arms long, slow breaths out through the mouth." },
+        { name: "Figure-4 Glute Stretch", duration: "1-2 min", instructions: "Lying down, cross one ankle over the opposite knee and pull gently." },
+        { name: "Neck Side Stretch", duration: "1 min", instructions: "Tilt your ear toward your shoulder and hold softly on each side." },
+      ],
+      diet_tip: "A bowl of curd with fruit makes a cheap, protein-rich dessert swap.",
+    },
+  ]},
+  lose_weight: { week: [
+    {
+      day: "Day 1", focus: "Full Body Burn",
+      warmup: [
+        { name: "March in Place", duration: "1 min", instructions: "Lift knees high and swing your arms to raise your heart rate gently." },
+        { name: "Bodyweight Squats", duration: "2 min", instructions: "Continuous smooth reps, exhaling on the way up." },
+        { name: "Arm Circles", duration: "1 min", instructions: "Forward and backward circles, growing bigger as shoulders loosen." },
+        { name: "Dynamic Lunges", duration: "2 min", instructions: "Alternate legs at an easy rhythm, torso tall throughout." },
+        { name: "Cross Trainer / Elliptical", duration: "10 min", instructions: "Steady pace where talking is possible but singing is not." },
+      ],
+      exercises: [
+        { name: "Goblet Squat", sets: 3, reps: "15", suggested_weight: "Start with a 4-6 kg dumbbell", instructions: "Higher reps at a light weight — rest only 30-45 seconds between sets.", alternative: "Leg Press", video_search_term: "goblet squat beginner form" },
+        { name: "Incline Push-up", sets: 3, reps: "12-15", suggested_weight: "Bodyweight only", instructions: "Keep your hips in line with your shoulders and move at a steady tempo.", alternative: "Knee Push-ups", video_search_term: "incline push up beginner" },
+        { name: "Lat Pulldown", sets: 3, reps: "15", suggested_weight: "Start around 12-15 kg", instructions: "Lighter weight, smooth full range, squeezing shoulder blades down each rep.", alternative: "Seated Cable Row", video_search_term: "lat pulldown beginner" },
+        { name: "Dumbbell Reverse Lunge", sets: 3, reps: "10 each leg", suggested_weight: "Bodyweight first, then 2-4 kg", instructions: "Step back softly and keep your front knee tracking over your toes.", alternative: "Leg Press", video_search_term: "reverse lunge form" },
+        { name: "Mountain Climbers (slow)", sets: 3, reps: "20 total", suggested_weight: "Bodyweight only", instructions: "Drive knees in slowly with hips level — speed matters less than control.", alternative: "March in Plank", video_search_term: "slow mountain climbers" },
+        { name: "Treadmill — always on incline", sets: 1, reps: "10 min", suggested_weight: "Speed 4-5.5 km/h, incline 8-10%", instructions: "Uphill walk at an effort where holding a conversation is challenging.", alternative: "Stair Climber", video_search_term: "incline treadmill fat loss walk" },
+      ],
+      cooldown: [
+        { name: "Standing Hamstring Stretch", duration: "1-2 min", instructions: "Fold forward gently with soft knees and let your arms hang." },
+        { name: "Standing Quad Stretch", duration: "1-2 min", instructions: "Heel to glutes with support, knees close together." },
+        { name: "Deep Breathing + Shoulder Rolls", duration: "1 min", instructions: "Slow nose-in, mouth-out breaths while rolling tension out of the shoulders." },
+      ],
+      diet_tip: "Fill half your plate with sabzi or salad first — you'll naturally eat fewer calories.",
+    },
+    {
+      day: "Day 2", focus: "Lower Body & Cardio",
+      warmup: [
+        { name: "Leg Swings", duration: "2 min", instructions: "Front-to-back and side-to-side swings holding a rail for balance." },
+        { name: "Glute Bridges", duration: "2 min", instructions: "Slow squeezes to switch the glutes on before you load them." },
+        { name: "Ankle Circles + Calf Raises", duration: "1 min", instructions: "Wake up ankles and calves with slow circles and easy raises." },
+        { name: "Bodyweight Squats", duration: "1 min", instructions: "Easy tempo, sinking a little deeper with each rep." },
+        { name: "Cycling", duration: "10 min", instructions: "Moderate pace with light resistance — legs should feel warm, not tired." },
+      ],
+      exercises: [
+        { name: "Leg Press", sets: 3, reps: "15", suggested_weight: "Start light — around 25-35 kg", instructions: "Steady reps with a short rest — stop each set two reps before failure.", alternative: "Goblet Squat", video_search_term: "leg press machine beginner" },
+        { name: "Dumbbell Romanian Deadlift", sets: 3, reps: "12-15", suggested_weight: "Start with 4-6 kg dumbbells", instructions: "Hinge at the hips with a flat back and squeeze your glutes to stand tall.", alternative: "Back Extension", video_search_term: "dumbbell romanian deadlift" },
+        { name: "Dumbbell Step-up", sets: 3, reps: "12 each leg", suggested_weight: "Bodyweight first, then 2-4 kg", instructions: "Use a low step and drive through the heel, keeping the pace continuous.", alternative: "Reverse Lunge", video_search_term: "dumbbell step up form" },
+        { name: "Standing Calf Raise", sets: 3, reps: "15-20", suggested_weight: "Bodyweight only", instructions: "Rise slowly to your toes, pause, and lower with control.", alternative: "Seated Calf Raise", video_search_term: "standing calf raise form" },
+        { name: "Plank", sets: 3, reps: "20-30 sec", suggested_weight: "Bodyweight only", instructions: "Brace your belly like someone might poke it and keep breathing.", alternative: "Knee Plank", video_search_term: "plank form beginner" },
+        { name: "Stair Climber", sets: 1, reps: "10 min", suggested_weight: "Slow steady pace", instructions: "A steady climb at conversation pace — this is your calorie finisher.", alternative: "Treadmill — always on incline", video_search_term: "stair climber beginner" },
+      ],
+      cooldown: [
+        { name: "Figure-4 Glute Stretch", duration: "1-2 min", instructions: "Cross ankle over knee lying down and pull the legs in gently." },
+        { name: "Standing Calf Stretch", duration: "1-2 min", instructions: "Press a wall with a straight back leg until the calf releases." },
+        { name: "Child's Pose", duration: "1 min", instructions: "Settle back onto your heels and let your breathing slow right down." },
+      ],
+      diet_tip: "Swap one fried snack today for roasted chana or makhana — crunchy, cheap and filling.",
+    },
+    {
+      day: "Day 3", focus: "Upper Body Circuit",
+      warmup: [
+        { name: "Shoulder Rolls", duration: "1 min", instructions: "Slow full circles backward then forward to loosen up." },
+        { name: "Wall Push-ups", duration: "2 min", instructions: "Easy reps against a wall to warm the chest and arms." },
+        { name: "Torso Twists", duration: "1 min", instructions: "Gentle rotation side to side, letting your arms swing freely." },
+        { name: "High Knees (march)", duration: "2 min", instructions: "Brisk march with a tall posture and pumping arms." },
+        { name: "Cross Trainer / Elliptical", duration: "8 min", instructions: "Push and pull the handles actively to warm the upper body too." },
+      ],
+      exercises: [
+        { name: "Machine Chest Press", sets: 3, reps: "15", suggested_weight: "Start light — around 10 kg", instructions: "Light weight and smooth reps with rests kept to 30-45 seconds.", alternative: "Incline Push-up", video_search_term: "machine chest press form" },
+        { name: "Seated Cable Row", sets: 3, reps: "15", suggested_weight: "Start around 12-15 kg", instructions: "Pull with your elbows close and resist the weight on the way back.", alternative: "Single Arm Dumbbell Row", video_search_term: "seated cable row form" },
+        { name: "Dumbbell Lateral Raise", sets: 3, reps: "12-15", suggested_weight: "Start with 1-3 kg dumbbells", instructions: "Raise to shoulder height with soft elbows and no swinging.", alternative: "Band Lateral Raise", video_search_term: "dumbbell lateral raise form" },
+        { name: "Dumbbell Bicep Curl", sets: 3, reps: "15", suggested_weight: "Start with 2-3 kg dumbbells", instructions: "Alternate arms at a brisk but controlled rhythm.", alternative: "Resistance Band Curl", video_search_term: "dumbbell bicep curl form" },
+        { name: "Rope Tricep Pushdown", sets: 3, reps: "15", suggested_weight: "Start around 8-10 kg", instructions: "Elbows pinned to your sides, press down and control the return.", alternative: "Bench Dips (feet on floor)", video_search_term: "rope tricep pushdown" },
+        { name: "Treadmill — always on incline", sets: 1, reps: "10 min", suggested_weight: "Speed 4-5 km/h, incline 8%", instructions: "Finish strong with an uphill walk, arms swinging naturally.", alternative: "Cycling", video_search_term: "incline treadmill walking" },
+      ],
+      cooldown: [
+        { name: "Doorway Chest Stretch", duration: "1-2 min", instructions: "Open the chest gently on each side against a frame or post." },
+        { name: "Cross-body Shoulder Stretch", duration: "1-2 min", instructions: "Draw one arm across your chest and hold without shrugging." },
+        { name: "Neck Side Stretch", duration: "1 min", instructions: "Ear toward shoulder, breathe, and switch sides slowly." },
+      ],
+      diet_tip: "Keep dinner lighter than lunch — think dal + sabzi + one roti instead of two.",
+    },
+  ]},
+  build_muscle: { week: [
+    {
+      day: "Day 1", focus: "Upper Body Push",
+      warmup: [
+        { name: "Arm Circles", duration: "1 min", instructions: "Progressively bigger circles both directions to open the shoulders." },
+        { name: "Wall Push-ups", duration: "2 min", instructions: "Smooth easy reps to send blood to the chest and triceps." },
+        { name: "Shoulder Rolls", duration: "1 min", instructions: "Roll shoulders back and down, resetting your posture each rep." },
+        { name: "Torso Twists", duration: "2 min", instructions: "Relaxed rotations to loosen the spine before pressing." },
+        { name: "Cycling", duration: "8 min", instructions: "Light spin purely to raise body temperature before lifting." },
+      ],
+      exercises: [
+        { name: "Machine Chest Press", sets: 3, reps: "8-12", suggested_weight: "A weight where the last 2 reps feel hard — try 15-20 kg", instructions: "Lower slowly for 2 counts and press up strong without locking elbows.", alternative: "Dumbbell Floor Press", video_search_term: "machine chest press form" },
+        { name: "Dumbbell Shoulder Press", sets: 3, reps: "8-12", suggested_weight: "Start with 4-6 kg dumbbells", instructions: "Brace your core and press to full lockout overhead without arching.", alternative: "Seated Machine Shoulder Press", video_search_term: "dumbbell shoulder press seated" },
+        { name: "Incline Dumbbell Press", sets: 3, reps: "10-12", suggested_weight: "Start with 4-6 kg dumbbells", instructions: "Set the bench to a low incline and touch the dumbbells lightly to your chest.", alternative: "Incline Push-up", video_search_term: "incline dumbbell press form" },
+        { name: "Dumbbell Lateral Raise", sets: 3, reps: "12", suggested_weight: "Start with 2-3 kg dumbbells", instructions: "Lead with your elbows and pause briefly at shoulder height.", alternative: "Cable Lateral Raise", video_search_term: "dumbbell lateral raise form" },
+        { name: "Rope Tricep Pushdown", sets: 3, reps: "10-12", suggested_weight: "Start around 10-12 kg", instructions: "Split the rope at the bottom and squeeze the triceps hard for a second.", alternative: "Bench Dips (feet on floor)", video_search_term: "rope tricep pushdown" },
+        { name: "Treadmill — always on incline", sets: 1, reps: "8-10 min", suggested_weight: "Easy pace, incline 4-6%", instructions: "An easy uphill walk to flush the muscles — keep it relaxed.", alternative: "Cycling", video_search_term: "incline treadmill walking" },
+      ],
+      cooldown: [
+        { name: "Doorway Chest Stretch", duration: "1-2 min", instructions: "Hold until the front of the shoulder releases, then switch sides." },
+        { name: "Overhead Tricep Stretch", duration: "1-2 min", instructions: "Reach one hand down your spine and assist gently with the other." },
+        { name: "Child's Pose", duration: "1 min", instructions: "Arms extended far forward to lengthen the lats and breathe deep." },
+      ],
+      diet_tip: "Muscle needs fuel: add 2 boiled eggs or a bowl of dal to your post-workout meal.",
+    },
+    {
+      day: "Day 2", focus: "Lower Body Strength",
+      warmup: [
+        { name: "Leg Swings", duration: "2 min", instructions: "Controlled swings each direction holding a rail." },
+        { name: "Bodyweight Squats", duration: "2 min", instructions: "Sink a bit deeper each rep as your hips warm up." },
+        { name: "Glute Bridges", duration: "1 min", instructions: "Pause and squeeze for 2 seconds at the top of each rep." },
+        { name: "Ankle Circles + Calf Raises", duration: "1 min", instructions: "Prep your ankles for stable squatting and pressing." },
+        { name: "Cycling", duration: "8 min", instructions: "Moderate spin with light resistance to fully warm the legs." },
+      ],
+      exercises: [
+        { name: "Goblet Squat", sets: 3, reps: "8-12", suggested_weight: "A dumbbell that challenges you by rep 10 — try 6-10 kg", instructions: "Sit between your heels with a proud chest and drive up through the floor.", alternative: "Leg Press", video_search_term: "goblet squat beginner form" },
+        { name: "Leg Press", sets: 3, reps: "10-12", suggested_weight: "Start around 40-50 kg", instructions: "Full controlled range without letting your lower back curl off the pad.", alternative: "Goblet Squat", video_search_term: "leg press machine beginner" },
+        { name: "Dumbbell Romanian Deadlift", sets: 3, reps: "10-12", suggested_weight: "Start with 6-8 kg dumbbells", instructions: "Flat back, hips back, and feel the hamstrings load before standing tall.", alternative: "Back Extension", video_search_term: "dumbbell romanian deadlift" },
+        { name: "Dumbbell Walking Lunge", sets: 3, reps: "8 each leg", suggested_weight: "Bodyweight first, then 3-5 kg", instructions: "Long controlled steps, lightly touching the back knee down each rep.", alternative: "Reverse Lunge", video_search_term: "walking lunge form" },
+        { name: "Standing Calf Raise", sets: 3, reps: "12-15", suggested_weight: "Bodyweight, then hold a dumbbell", instructions: "Pause one second at the top and stretch fully at the bottom.", alternative: "Seated Calf Raise", video_search_term: "standing calf raise form" },
+        { name: "Stair Climber", sets: 1, reps: "8-10 min", suggested_weight: "Easy steady pace", instructions: "Gentle climb to finish — your legs did the real work already.", alternative: "Cross Trainer / Elliptical", video_search_term: "stair climber beginner" },
+      ],
+      cooldown: [
+        { name: "Standing Quad Stretch", duration: "1-2 min", instructions: "Heel to glutes, knees together, hips pressed slightly forward." },
+        { name: "Seated Forward Fold", duration: "1-2 min", instructions: "Hinge from the hips and reach toward your toes without forcing it." },
+        { name: "Figure-4 Glute Stretch", duration: "1 min", instructions: "Cross ankle over knee and pull in until the glute releases." },
+      ],
+      diet_tip: "Paneer is a budget bodybuilder's friend — 100g gives ~18g protein.",
+    },
+    {
+      day: "Day 3", focus: "Upper Body Pull & Core",
+      warmup: [
+        { name: "Shoulder Rolls", duration: "1 min", instructions: "Loosen the upper back with big slow rolls." },
+        { name: "Cat-Cow Stretch", duration: "2 min", instructions: "Mobilize the spine slowly, matching movement to breath." },
+        { name: "Band Pull-aparts (or arm swings)", duration: "1 min", instructions: "Squeeze shoulder blades together on every rep." },
+        { name: "Torso Twists", duration: "2 min", instructions: "Easy rotations to wake up the obliques before rowing." },
+        { name: "Cross Trainer / Elliptical", duration: "8 min", instructions: "Steady strides using the handles to warm the pulling muscles." },
+      ],
+      exercises: [
+        { name: "Lat Pulldown", sets: 3, reps: "8-12", suggested_weight: "A stack the last 2 reps fight you on — try 20-25 kg", instructions: "Drive your elbows down to your ribs and control the bar back up.", alternative: "Band Assisted Pull-up", video_search_term: "lat pulldown beginner" },
+        { name: "Seated Cable Row", sets: 3, reps: "10-12", suggested_weight: "Start around 20 kg", instructions: "Chest tall, pull to your stomach and let the weight stretch you forward slowly.", alternative: "Single Arm Dumbbell Row", video_search_term: "seated cable row form" },
+        { name: "Single Arm Dumbbell Row", sets: 3, reps: "10 each side", suggested_weight: "Start with 6-8 kg", instructions: "Row to your hip pocket and keep your shoulders square to the bench.", alternative: "Seated Cable Row", video_search_term: "one arm dumbbell row" },
+        { name: "Dumbbell Bicep Curl", sets: 3, reps: "10-12", suggested_weight: "Start with 3-5 kg dumbbells", instructions: "Squeeze at the top and take 2 full seconds to lower each rep.", alternative: "Cable Curl", video_search_term: "dumbbell bicep curl form" },
+        { name: "Plank", sets: 3, reps: "30-40 sec", suggested_weight: "Bodyweight only", instructions: "Squeeze glutes and quads so your body stays one rigid line.", alternative: "Dead Bug", video_search_term: "plank form beginner" },
+        { name: "Treadmill — always on incline", sets: 1, reps: "8-10 min", suggested_weight: "Easy pace, incline 4-6%", instructions: "Relaxed uphill walk to cool the engine down gradually.", alternative: "Cycling", video_search_term: "incline treadmill walking" },
+      ],
+      cooldown: [
+        { name: "Lat Stretch on Rail", duration: "1-2 min", instructions: "Hold a rail, sit your hips back and feel the stretch down your side." },
+        { name: "Cross-body Shoulder Stretch", duration: "1-2 min", instructions: "Gentle hold each side without lifting the shoulder." },
+        { name: "Cobra Stretch", duration: "1 min", instructions: "Press your chest up gently from the floor, hips staying down." },
+      ],
+      diet_tip: "Eat something with protein within 2 hours of training — curd rice with dal works great.",
+    },
+  ]},
+};
+
+// Hardcoded Indian budget-friendly meal ideas, served when /api/meal-ideas is
+// unreachable. Keys match the meal chips exactly.
+const FALLBACK_MEALS = {
+  Breakfast: {
+    ideas: ["Vegetable Poha with Peanuts", "Moong Dal Chilla", "Egg Bhurji with 2 Rotis"],
+    cravingSwaps: ["Craving something sweet? Try dates with peanut butter instead of biscuits.", "Craving crunch? Roasted chana beats namkeen for a fraction of the calories."],
+  },
+  Lunch: {
+    ideas: ["Dal, Rice and Cucumber Salad", "Rajma Chawal with Curd", "Paneer Bhurji with Roti"],
+    cravingSwaps: ["Craving fried food? Try a tawa-roasted aloo tikki instead of deep-fried pakoras.", "Craving a cold drink? Chaas or nimbu pani beat cola on price and calories."],
+  },
+  Dinner: {
+    ideas: ["Khichdi with a Bowl of Curd", "Palak Paneer with 2 Rotis", "Egg Curry with Rice"],
+    cravingSwaps: ["Craving dessert after dinner? A small bowl of fruit with curd usually does the trick.", "Craving maggi? Add an egg and vegetables so it at least feeds your muscles too."],
+  },
+  Snack: {
+    ideas: ["Roasted Chana", "Sprouts Chaat with Lemon", "Curd with Seasonal Fruit"],
+    cravingSwaps: ["Craving chips? Roasted makhana gives the same crunch with far better nutrition.", "Craving chai-biscuit? Keep the chai, swap biscuits for a handful of peanuts."],
+  },
+};
+
+// One dependable recipe served when /api/recipe is unreachable — simple dal
+// tadka that works as a base for almost any meal above.
+const FALLBACK_RECIPE = {
+  steps: [
+    "Rinse 1/2 cup yellow moong dal and pressure cook with 1.5 cups water, a pinch of turmeric and salt for 3 whistles.",
+    "Heat 1 tsp ghee or oil in a small pan and let 1/2 tsp cumin seeds splutter.",
+    "Add 1 chopped onion, 1 chopped tomato and a little garlic, and cook until soft.",
+    "Stir this tadka into the cooked dal, simmer 2 minutes and top with coriander.",
+    "Serve hot with rice or 2 rotis, and add a boiled egg or bowl of curd for extra protein.",
+  ],
+  ingredients: [
+    { name: "Yellow moong dal (1/2 cup)", alternative: "toor dal or masoor dal" },
+    { name: "Onion, tomato and garlic", alternative: "any vegetables you have on hand" },
+    { name: "Cumin seeds, turmeric and salt", alternative: "any basic curry masala mix" },
+    { name: "Ghee or oil (1 tsp)", alternative: "butter" },
+    { name: "Rice or rotis to serve", alternative: "a boiled egg or curd for extra protein" },
+  ],
+};
+
+const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
 
 // ---------- Persistence load (runs before first render) ----------
 // Safe reads: a blocked localStorage or one corrupted key must never kill the
@@ -331,6 +616,7 @@ const STATE = {
   workLog: readStoredJSON(STORAGE_KEYS.workLog, {}),
   lastDaySummary: readStoredJSON(STORAGE_KEYS.lastDaySummary, null),
   streak: parseInt(readStored(STORAGE_KEYS.streak) || '0', 10),
+  usingFallback: readStored(STORAGE_KEYS.usingFallback) === '1',
   loading: false,
   error: null,
   expanded: {},
@@ -717,10 +1003,13 @@ async function fetchMealIdeas(mealType) {
       body: JSON.stringify({ mealType, goal: STATE.onboarding.goal }),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Failed to get meal ideas');
+    if (!response.ok) throw new Error(data.error || 'empty meal response');
     STATE.mealIdeas[mealType] = { ideas: data.ideas || [], cravingSwaps: data.cravingSwaps || [] };
   } catch (err) {
-    STATE.mealIdeasError[mealType] = err.message;
+    // API unavailable → serve the hardcoded Indian budget-friendly ideas
+    // instead of an error; the UI renders them exactly like API results.
+    console.log('[gymbuddy] meal-ideas API unavailable (' + err.message + ') — using built-in ' + mealType + ' ideas');
+    STATE.mealIdeas[mealType] = deepCopy(FALLBACK_MEALS[mealType] || FALLBACK_MEALS.Snack);
   } finally {
     STATE.mealIdeasLoading[mealType] = false;
     render();
@@ -739,10 +1028,12 @@ async function fetchRecipe(mealName) {
       body: JSON.stringify({ mealName }),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Failed to get recipe');
+    if (!response.ok) throw new Error(data.error || 'empty recipe response');
     STATE.recipes[mealName] = { steps: data.steps || [], ingredients: data.ingredients || [] };
   } catch (err) {
-    STATE.recipeError[mealName] = err.message;
+    // API unavailable → serve the dependable built-in dal recipe instead.
+    console.log('[gymbuddy] recipe API unavailable (' + err.message + ') — using built-in recipe');
+    STATE.recipes[mealName] = deepCopy(FALLBACK_RECIPE);
   } finally {
     STATE.recipeLoading[mealName] = false;
     render();
@@ -805,11 +1096,13 @@ async function toggleOrFetchVideo(vKey, searchTerm) {
       body: JSON.stringify({ searchTerm }),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Failed to load video');
+    if (!response.ok) throw new Error(data.error || 'empty video response');
     STATE.videoCache[vKey] = data.videoId;
     STATE.videoVisible[vKey] = true;
   } catch (err) {
-    STATE.videoError[vKey] = err.message;
+    // Gentle copy only — the real reason goes to the console, never the screen.
+    console.log('[gymbuddy] video API unavailable (' + err.message + ')');
+    STATE.videoError[vKey] = 'Video is taking a break — tap to try again in a moment.';
   } finally {
     STATE.videoLoading[vKey] = false;
     render();
@@ -1609,6 +1902,41 @@ function attachListeners() {
   });
 }
 
+// Gentle informational banner. Attached to <body>, not the phone frame, so
+// re-renders can't wipe it; auto-dismisses after 4s and never blocks taps.
+function showToast(message) {
+  const existing = document.getElementById('toastBanner');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'toastBanner';
+  el.className = 'toast-banner';
+  el.textContent = message;
+  document.body.appendChild(el);
+  // setTimeout, not requestAnimationFrame: rAF is throttled in backgrounded
+  // tabs and the toast would silently never fade in.
+  setTimeout(() => el.classList.add('show'), 20);
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 350);
+  }, 4000);
+}
+
+// Install a week as the active plan (API or fallback) and persist everything
+// synchronously. The usingFallback flag survives reloads so the boot logic
+// knows to retry the API in the background.
+function adoptPlan(week, { fallback }) {
+  STATE.plan = { schema_version: PLAN_SCHEMA_VERSION, week };
+  STATE.dayProgress = {};
+  STATE.lastDaySummary = null;
+  localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(STATE.plan));
+  localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
+  localStorage.removeItem(STORAGE_KEYS.lastDaySummary);
+  STATE.usingFallback = !!fallback;
+  if (fallback) localStorage.setItem(STORAGE_KEYS.usingFallback, '1');
+  else localStorage.removeItem(STORAGE_KEYS.usingFallback);
+  resetDayScopedState();
+}
+
 async function generatePlan() {
   STATE.screen = 'loading';
   STATE.error = null;
@@ -1622,23 +1950,58 @@ async function generatePlan() {
       body: JSON.stringify(STATE.onboarding),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Failed to generate plan');
-    STATE.plan = { schema_version: PLAN_SCHEMA_VERSION, week: data.week };
-    STATE.dayProgress = {};
-    STATE.lastDaySummary = null;
-    localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(STATE.plan));
-    localStorage.setItem(STORAGE_KEYS.dayProgress, JSON.stringify(STATE.dayProgress));
-    localStorage.removeItem(STORAGE_KEYS.lastDaySummary);
-    resetDayScopedState();
+    if (!response.ok || !Array.isArray(data.week) || data.week.length === 0) {
+      throw new Error(data.error || 'empty plan response');
+    }
+    adoptPlan(data.week, { fallback: false });
     stopLoadingFacts();
     STATE.screen = 'home';
     render();
   } catch (err) {
+    // Any failure (timeout, rate limit, 5xx, network) falls back to a
+    // pre-built starter plan matching the user's goal — never an error screen.
     stopLoadingFacts();
-    STATE.error = "Couldn't generate your plan: " + err.message + '. Please try again.';
-    // Show the error on the screen that has the generate/regenerate button
-    STATE.screen = (STATE.plan && !isPlanValid(STATE.plan)) ? 'planRefresh' : 'injuries';
+    const goalKey = FALLBACK_PLANS[STATE.onboarding.goal] ? STATE.onboarding.goal : 'general_fitness';
+    console.log('[gymbuddy] plan API unavailable (' + err.message + ') — using starter plan:', goalKey);
+    adoptPlan(deepCopy(FALLBACK_PLANS[goalKey].week), { fallback: true });
+    STATE.screen = 'home';
     render();
+    showToast('Using a starter plan — personalized plan will sync when connection improves');
+  }
+}
+
+// Runs once per app open when the last plan came from the fallback: quietly
+// asks the API again and swaps in the personalized plan, but only if the user
+// hasn't logged any progress yet. Failures are silent by design.
+async function silentPlanRefresh() {
+  const ob = STATE.onboarding || {};
+  if (!ob.experience_level || !ob.days_available || !ob.goal) return;
+  const untouched = () =>
+    Object.keys(STATE.sequenceProgress).length === 0 && Object.keys(STATE.dayProgress).length === 0;
+  if (!untouched()) return;
+  console.log('[gymbuddy] silent retry: fetching personalized plan in background');
+  try {
+    const response = await fetch('/api/generate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(STATE.onboarding),
+    });
+    const data = await response.json();
+    if (!response.ok || !Array.isArray(data.week) || data.week.length === 0) {
+      console.log('[gymbuddy] silent retry: API still unavailable — keeping starter plan');
+      return;
+    }
+    // Re-check after the await: the user may have started exercising meanwhile.
+    if (!untouched()) {
+      console.log('[gymbuddy] silent retry: user already started — keeping starter plan');
+      return;
+    }
+    adoptPlan(data.week, { fallback: false });
+    console.log('[gymbuddy] silent retry: personalized plan synced');
+    render();
+    showToast('Your personalized plan is ready ✨');
+  } catch (err) {
+    console.log('[gymbuddy] silent retry skipped:', err.message);
   }
 }
 
@@ -1653,6 +2016,10 @@ function bumpStreakIfNeeded() {
 }
 
 render();
+
+// If the current plan is a starter fallback, quietly try to upgrade it to a
+// personalized one in the background — once per app open, never interrupting.
+if (STATE.usingFallback && STATE.plan) silentPlanRefresh();
 </script>
 </body>
 </html>
