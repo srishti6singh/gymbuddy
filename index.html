@@ -270,6 +270,48 @@
   }
   .toast-banner.show { opacity: 1; transform: translate(-50%, 0); }
 
+  /* Polish round */
+  .seg-toggle-sm { margin-left: auto; }
+  .seg-toggle-sm .seg-btn { min-height: 32px; font-size: 10px; padding: 0 8px; }
+  .btn-secondary {
+    width: 100%; min-height: var(--tap-target-sm); background: none; border: 1.5px solid #555;
+    color: var(--text-primary); border-radius: var(--radius-sm); font-size: 14px; font-weight: 700;
+    cursor: pointer; margin-top: 10px;
+  }
+  .alt-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .alt-row-label { font-size: 12px; color: var(--text-secondary); flex-shrink: 0; }
+  .alt-swap-pill {
+    min-height: 36px; background: rgba(255,193,7,0.08); border: 1.5px solid var(--accent-warn);
+    color: var(--accent-warn); border-radius: 999px; font-size: 12px; font-weight: 700;
+    cursor: pointer; padding: 0 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .controls-centered { justify-content: center; padding-left: 0; }
+  .info-btn {
+    width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--text-secondary);
+    background: none; color: var(--text-secondary); font-size: 11px; font-weight: 700; font-style: italic;
+    cursor: pointer; vertical-align: middle; margin-left: 4px; line-height: 1;
+  }
+  .order-btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-mini {
+    min-height: 38px; background: none; border: 1.5px solid #444; color: var(--text-primary);
+    border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 12px;
+  }
+  .upnext-card { background: var(--bg-surface); border-radius: 12px; padding: 12px 14px; margin-top: 12px; }
+  .upnext-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 4px 0; }
+  .upnext-name { font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .upnext-meta { font-size: 12px; color: var(--text-secondary); flex-shrink: 0; }
+  .profile-avatar {
+    width: 64px; height: 64px; border-radius: 50%; background: var(--bg-surface);
+    border: 1.5px solid #333; font-size: 30px; display: flex; align-items: center;
+    justify-content: center; margin: 0 auto;
+  }
+  .sync-pill {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    background: var(--bg-surface); border: 1px solid var(--accent-primary); color: var(--accent-primary);
+    padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    z-index: 60; pointer-events: none;
+  }
+
   /* Home header profile button */
   .profile-btn {
     min-width: var(--tap-target-sm); min-height: var(--tap-target-sm); flex-shrink: 0;
@@ -719,6 +761,7 @@ const STATE = {
   history: readStoredJSON(STORAGE_KEYS.history, []),
   dietPref: readStored(STORAGE_KEYS.dietPref),
   weekReview: null,
+  calInfoOpen: false,
   bmiSuggest: null,
   bmiPromptResolved: false,
   loading: false,
@@ -1178,14 +1221,21 @@ function toggleMealExpand(idea, kind) {
   render();
 }
 
-function copyAndOrderIngredients(idea) {
+function copyToClipboard(text) {
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {});
+  }
+}
+
+function copyIngredientList(idea) {
   const recipe = STATE.recipes[idea];
   if (recipe && recipe.ingredients && recipe.ingredients.length) {
-    const text = recipe.ingredients.map((i) => i.name).join('\n');
-    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(() => {});
-    }
+    copyToClipboard(recipe.ingredients.map((i) => i.name).join('\n'));
+    showToast('Ingredient list copied 📋');
   }
+}
+
+function openInstamart() {
   window.open('https://www.swiggy.com/instamart', '_blank', 'noopener');
 }
 
@@ -1277,6 +1327,13 @@ async function toggleOrFetchVideo(vKey, searchTerm) {
 
 function render() {
   const frame = document.getElementById('phoneFrame');
+  // innerHTML replacement creates a fresh .screen element with scrollTop 0,
+  // which made every mid-session tap (Start Set, View Instructions, …) jump
+  // to the top. Capture and restore scroll — but only for same-screen
+  // re-renders; actual navigation should still start at the top.
+  const prevScreenEl = frame.querySelector ? frame.querySelector('.screen.active') : null;
+  const prevScroll = prevScreenEl ? prevScreenEl.scrollTop : 0;
+  const sameScreen = render._lastScreen === STATE.screen;
   if (STATE.screen === 'profile') frame.innerHTML = renderProfile();
   else if (STATE.screen === 'experience') frame.innerHTML = renderExperience();
   else if (STATE.screen === 'days') frame.innerHTML = renderDays();
@@ -1290,6 +1347,11 @@ function render() {
   else if (STATE.screen === 'session') frame.innerHTML = renderSession();
   else if (STATE.screen === 'summary') frame.innerHTML = renderSummary();
   attachListeners();
+  if (sameScreen && prevScroll) {
+    const nextScreenEl = frame.querySelector ? frame.querySelector('.screen.active') : null;
+    if (nextScreenEl) nextScreenEl.scrollTop = prevScroll;
+  }
+  render._lastScreen = STATE.screen;
 }
 
 function renderDots(done) {
@@ -1441,7 +1503,7 @@ function renderInjuries() {
       <p class="text-secondary" style="margin-top:8px;">Optional — we'll avoid movements that could aggravate them.</p>
       <textarea id="injuriesInput" class="injuries-input" placeholder="e.g. knee pain, lower back — or leave blank">${escapeHtml(injuries)}</textarea>
       <button class="btn-primary" id="generatePlanBtn" style="margin-top:20px;">Generate My Week</button>
-      <button class="btn-ghost" id="skipInjuriesBtn">Skip — no injuries</button>
+      <button class="btn-secondary" id="skipInjuriesBtn">Skip — no injuries</button>
       ${STATE.error ? `<div class="error-box">${escapeHtml(STATE.error)}</div>` : ''}
     </div>`;
 }
@@ -1523,8 +1585,31 @@ function renderHome() {
         ${day.adaptation_note ? `<div class="adaptation-note">✨ ${escapeHtml(day.adaptation_note)}</div>` : ''}
         <button class="btn-primary" id="startDayBtn">Start Day</button>
       </div>
+      ${renderUpNext(day, dIdx)}
       <button class="btn-ghost" id="restartBtn">Start over with new answers</button>
       ${previewSheetHtml}
+    </div>`;
+}
+
+// Compact non-interactive preview of the next 2-3 items in the active day.
+function renderUpNext(day, dIdx) {
+  const sequence = buildDaySequence(day);
+  let cur = 0;
+  while (cur < sequence.length && STATE.sequenceProgress[cur]) cur++;
+  const upcoming = sequence.slice(cur, cur + 3);
+  if (!upcoming.length) return '';
+  const badge = (type) => (type === 'warmup' ? '🔥' : type === 'cooldown' ? '🧘' : '💪');
+  const meta = (entry) => entry.type === 'exercise'
+    ? `${parseInt(entry.item.sets, 10) || 1} × ${escapeHtml(entry.item.reps)}`
+    : escapeHtml(entry.item.duration || '');
+  return `
+    <div class="upnext-card">
+      <div class="phase-label" style="margin-bottom:4px;">Up next</div>
+      ${upcoming.map((e) => `
+      <div class="upnext-row">
+        <span class="upnext-name">${badge(e.type)} ${escapeHtml(e.item.name)}</span>
+        <span class="upnext-meta">${meta(e)}</span>
+      </div>`).join('')}
     </div>`;
 }
 
@@ -1678,7 +1763,10 @@ function renderProfilePage() {
   return `
     <div class="screen active">
       <div class="eyebrow">Profile</div>
-      <h1 style="font-size:22px;">👤 ${escapeHtml(STATE.name || 'You')}</h1>
+      <div style="text-align:center; margin-top:6px;">
+        <div class="profile-avatar">👤</div>
+        <h1 style="font-size:20px; margin-top:8px;">${escapeHtml(STATE.name || 'You')}</h1>
+      </div>
 
       <div class="profile-row">
         <div class="phase-label">Name</div>
@@ -1781,6 +1869,10 @@ function renderSessionTimerCurrent(entry, key, idx, badge) {
       ${t ? `<button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>` : ''}
       <button class="btn-skip" data-skip-index="${idx}">Skip</button>
       ${videoButtonHtml}
+      <div class="seg-toggle seg-toggle-sm">
+        <button class="seg-btn ${STATE.mediaMode === 'video' ? 'active' : ''}" data-media-mode="video">Video</button>
+        <button class="seg-btn ${STATE.mediaMode === 'avatar' ? 'active' : ''}" data-media-mode="avatar">Avatar</button>
+      </div>
     </div>
     ${mediaHtml}`;
 }
@@ -1797,7 +1889,7 @@ function renderSetFlow(ex, key, idx, totalSets) {
         <div class="rep-number pulse" id="repNumber">${rep}</div>
         <div class="session-item-meta">Set ${sf.setIndex + 1} of ${totalSets} · ${t.totalReps} reps</div>
       </div>
-      <div class="session-item-controls">
+      <div class="session-item-controls controls-centered">
         <button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>
         <button class="btn-skip" data-skip-set>Skip Set</button>
       </div>`;
@@ -1808,7 +1900,7 @@ function renderSetFlow(ex, key, idx, totalSets) {
         <div class="rep-number" id="activeCountdown">${formatTime(t.totalSeconds - t.elapsed)}</div>
         <div class="session-item-meta">Set ${sf.setIndex + 1} of ${totalSets} · hold until 0:00</div>
       </div>
-      <div class="session-item-controls">
+      <div class="session-item-controls controls-centered">
         <button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>
         <button class="btn-skip" data-skip-set>Skip Set</button>
       </div>`;
@@ -1818,7 +1910,7 @@ function renderSetFlow(ex, key, idx, totalSets) {
       <div class="session-item-controls">
         <div class="set-label">Rest — next set in <span class="timer-display" id="activeCountdown">${formatTime(t.totalSeconds - t.elapsed)}</span></div>
       </div>
-      <div class="session-item-controls">
+      <div class="session-item-controls controls-centered">
         <button class="btn-skip" data-pause-toggle>${t.paused ? '▶ Resume' : '⏸ Pause'}</button>
         <button class="btn-skip" data-skip-rest>Skip Rest</button>
       </div>`;
@@ -1887,12 +1979,19 @@ function renderSessionExerciseCurrent(entry, key, idx) {
       <div class="action-stat"><div class="action-stat-label">Rest</div><div class="action-stat-value">${REST_SECONDS}s</div></div>
     </div>`;
 
+  // Alternative exercise lives in its own visible row below the media stage;
+  // the accordion keeps only form cues.
+  const altRow = ex.alternative ? `
+    <div class="alt-row">
+      <span class="alt-row-label">Not feeling it? →</span>
+      <button class="alt-swap-pill" data-swap-key="${key}">⇄ ${disp.swapped ? `Back to ${escapeHtml(ex.name)}` : `Try ${escapeHtml(ex.alternative)}`}</button>
+    </div>` : '';
+
   // 4. Instructions collapsed by default into an accordion at the bottom.
   const accordion = `
     <button class="accordion-toggle" data-expand-key="${key}"><span>📋 View Instructions</span><span>${expanded ? '▴' : '▾'}</span></button>
     ${expanded ? `<div class="accordion-body">
       <div class="session-item-instructions">${escapeHtml(ex.instructions)}</div>
-      ${ex.alternative ? `<button class="alt-swap-btn" data-swap-key="${key}">⇄ ${disp.swapped ? `Switch back to: ${escapeHtml(ex.name)}` : `Alternative: ${escapeHtml(ex.alternative)}`}</button>` : ''}
     </div>` : ''}`;
 
   return `
@@ -1906,6 +2005,7 @@ function renderSessionExerciseCurrent(entry, key, idx) {
     </div>
     ${mediaTabs}
     ${stageHtml}
+    ${altRow}
     ${actionRow}
     ${renderSetFlow(ex, key, idx, totalSets)}
     ${accordion}
@@ -1978,10 +2078,6 @@ function renderSession() {
           <div class="eyebrow">Day ${dIdx + 1} of ${STATE.plan.week.length}</div>
           <h1 style="font-size:22px;">${escapeHtml(day.focus)}</h1>
         </div>
-        <div class="seg-toggle">
-          <button class="seg-btn ${STATE.mediaMode === 'video' ? 'active' : ''}" data-media-mode="video">Demo Video</button>
-          <button class="seg-btn ${STATE.mediaMode === 'avatar' ? 'active' : ''}" data-media-mode="avatar">Coach Avatar</button>
-        </div>
       </div>
       <div class="progress-track"><div class="progress-fill" style="transform:scaleX(${pct.toFixed(3)});"></div></div>
       <div class="session-progress-label">${Math.min(currentIndex, total)} of ${total} complete</div>
@@ -2016,7 +2112,10 @@ function renderMealIdeaCard(idea) {
     expandedHtml = `
       <ul class="ingredient-list">${recipe.ingredients.map((ing) =>
         `<li><strong>${escapeHtml(ing.name)}</strong>${ing.alternative ? ` — <span class="ingredient-alt">${escapeHtml(ing.alternative)}</span>` : ''}</li>`).join('')}</ul>
-      <button class="btn-skip" data-copy-order="${escapeHtml(idea)}" style="margin-top:10px;">Copy list · Order on Instamart</button>`;
+      <div class="order-btn-row">
+        <button class="btn-mini" data-copy-list="${escapeHtml(idea)}">📋 Copy list</button>
+        <button class="btn-mini" data-order-instamart>🛒 Order on Instamart</button>
+      </div>`;
   }
 
   return `
@@ -2065,7 +2164,8 @@ function renderSummary() {
       if (swaps.length) {
         cravingsHtml = `
           <div class="phase-label" style="margin-top:18px;">🍫 Craving Swaps</div>
-          <ul class="summary-list">${swaps.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>`;
+          <ul class="summary-list">${swaps.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>
+          <div class="order-btn-row"><button class="btn-mini" data-order-instamart>🛒 Order swaps</button></div>`;
       }
     }
   }
@@ -2078,9 +2178,8 @@ function renderSummary() {
         <div class="text-secondary" style="margin-top:4px;">${escapeHtml(day.focus)}</div>
       </div>
       <div class="progress-card">
-        <div class="progress-card-title">Estimated Calories Burned</div>
-        <div class="progress-card-value" style="margin-top:6px;">~${cal.kcal} kcal</div>
-        <div class="progress-card-sub">Estimated from your ${cal.activeMinutes} active minutes${weightNote}. A rough estimate, not precise tracking.</div>
+        <div class="progress-card-value" style="margin-top:2px;">~${cal.kcal} kcal · ${cal.activeMinutes} active min <button class="info-btn" id="calInfoBtn" aria-label="How this is estimated">i</button></div>
+        ${STATE.calInfoOpen ? `<div class="progress-card-sub">Estimated from your active minutes${weightNote}. A rough estimate, not precise tracking.</div>` : ''}
       </div>
       <div class="phase-label" style="margin-top:18px;">What's your next meal?</div>
       <div class="meal-chips">${mealChips}</div>
@@ -2429,8 +2528,18 @@ function attachListeners() {
     btn.addEventListener('click', guardTap(() => toggleMealExpand(btn.dataset.ingredientsFor, 'ingredients')));
   });
 
-  document.querySelectorAll('[data-copy-order]').forEach((btn) => {
-    btn.addEventListener('click', guardTap(() => copyAndOrderIngredients(btn.dataset.copyOrder)));
+  document.querySelectorAll('[data-order-instamart]').forEach((btn) => {
+    btn.addEventListener('click', guardTap(openInstamart));
+  });
+
+  const calInfoBtn = document.getElementById('calInfoBtn');
+  if (calInfoBtn) calInfoBtn.addEventListener('click', () => {
+    STATE.calInfoOpen = !STATE.calInfoOpen;
+    render();
+  });
+
+  document.querySelectorAll('[data-copy-list]').forEach((btn) => {
+    btn.addEventListener('click', guardTap(() => copyIngredientList(btn.dataset.copyList)));
   });
 
   const restartBtn = document.getElementById('restartBtn');
@@ -2533,7 +2642,23 @@ async function generatePlan() {
 // Runs once per app open when the last plan came from the fallback: quietly
 // asks the API again and swaps in the personalized plan, but only if the user
 // hasn't logged any progress yet. Failures are silent by design.
+// Tiny non-blocking indicator while the personalized plan syncs in the
+// background. Lives outside the render cycle, like the toast.
+function showSyncPill() {
+  if (document.getElementById('syncPill')) return;
+  const el = document.createElement('div');
+  el.id = 'syncPill';
+  el.className = 'sync-pill';
+  el.textContent = '✨ Personalizing…';
+  document.body.appendChild(el);
+}
+function hideSyncPill() {
+  const el = document.getElementById('syncPill');
+  if (el) el.remove();
+}
+
 async function silentPlanRefresh() {
+  if (silentPlanRefresh._inFlight) return;
   const ob = STATE.onboarding || {};
   if (!ob.experience_level || !ob.days_available || !ob.goal) return;
   // Week 2+ fallbacks stay put: regenerating via /api/generate-plan would
@@ -2542,6 +2667,8 @@ async function silentPlanRefresh() {
   const untouched = () =>
     Object.keys(STATE.sequenceProgress).length === 0 && Object.keys(STATE.dayProgress).length === 0;
   if (!untouched()) return;
+  silentPlanRefresh._inFlight = true;
+  showSyncPill();
   console.log('[gymbuddy] silent retry: fetching personalized plan in background');
   try {
     const response = await fetch('/api/generate-plan', {
@@ -2565,6 +2692,9 @@ async function silentPlanRefresh() {
     showToast('Your personalized plan is ready ✨');
   } catch (err) {
     console.log('[gymbuddy] silent retry skipped:', err.message);
+  } finally {
+    hideSyncPill();
+    silentPlanRefresh._inFlight = false;
   }
 }
 
@@ -2583,6 +2713,14 @@ render();
 // If the current plan is a starter fallback, quietly try to upgrade it to a
 // personalized one in the background — once per app open, never interrupting.
 if (STATE.usingFallback && STATE.plan) silentPlanRefresh();
+
+// …and again whenever the app comes back to the foreground, so a starter
+// plan upgrades as soon as connectivity returns (same no-progress guard).
+if (typeof document.addEventListener === 'function') {
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && STATE.usingFallback && STATE.plan) silentPlanRefresh();
+  });
+}
 </script>
 </body>
 </html>

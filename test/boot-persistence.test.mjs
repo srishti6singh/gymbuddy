@@ -37,10 +37,11 @@ function makeStorage(initial = new Map()) {
 
 function makeElementStub() {
   return {
-    innerHTML: '', value: '', disabled: false, textContent: '',
+    innerHTML: '', value: '', disabled: false, textContent: '', scrollTop: 0,
     dataset: {}, style: {},
     classList: { add() {}, remove() {}, contains: () => false },
     addEventListener() {}, appendChild() {}, remove() {},
+    querySelector: () => null,
   };
 }
 
@@ -52,6 +53,8 @@ function boot(storage, fetchImpl) {
     querySelectorAll: () => [],
     createElement: () => makeElementStub(),
     body: makeElementStub(),
+    addEventListener() {},
+    hidden: false,
   };
   const locationStub = { origin: 'http://test.local', reload() {} };
   const fetchStub = fetchImpl || (() => Promise.reject(new Error('offline')));
